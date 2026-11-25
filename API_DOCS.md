@@ -116,11 +116,11 @@ The jobs are scheduled functions in `api/jobs.jac`, run by the app itself. `JAC_
 </details>
 
 <details>
-<summary><b>🗄️ Database: MongoDB Atlas</b></summary>
+<summary><b>🗄️ Data: the app's own store</b></summary>
 <br/>
 
-*   **Connection:** Standard URI. Node, Docker and Vercel share one connection; on Cloudflare Workers each request opens its own.
-*   **Collections:** `user`, `session` and `account` (Better Auth), `watchlists`, `watchlistlists` (named lists), `alerts`, `rate_limits`.
+*   **Where:** SQLite files in the app's data directory (`JAC_WEB_DATA`): `graph.db` and `accounts.db`. No database server.
+*   **What:** accounts and sessions (neojac's accounts plugin); under each account's root, its `Profile`, `Pick` (watchlist), `NamedList` and `Alert` nodes.
 
 </details>
 
