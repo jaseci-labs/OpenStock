@@ -28,6 +28,11 @@ def serve(table: dict[str, tuple[int, str]], keys: str = "k1") {
     cache.clear();
 }
 
+"""A 200 with this body, as JSON unless it is text already."""
+def ok(body: any) -> tuple[int, str] {
+    return (200, body if isinstance(body, str) else json.dumps(body));
+}
+
 def chart_json(closes: list[float | None], **meta: any) -> str {
     return json.dumps({
         "chart": {"result": [{"meta": meta, "indicators": {"quote": [{"close": closes}]}}]},
@@ -202,9 +207,8 @@ test "watchlist rows are priced from Yahoo or Finnhub, and zero where neither co
     serve({
         "PKN.WA": (200, chart_json([100.0, 110.0], longName="Orlen S.A.")),
         "quote?symbol=AAPL": (200, '{"c": 190.5, "d": 1.5, "dp": 0.79}'),
-        "profile2?symbol=AAPL": (
-            200,
-            '{"name": "Apple Inc", "currency": "USD", "logo": "a.png", "marketCapitalization": 3000000}',
+        "profile2?symbol=AAPL": ok(
+            dict(name="Apple Inc", currency="USD", logo="a.png", marketCapitalization=3000000)
         ),
     });
     rows = get_watchlist_data(["PKN.WA", "AAPL", "7203.T"]);
@@ -215,12 +219,10 @@ test "watchlist rows are priced from Yahoo or Finnhub, and zero where neither co
 }
 
 test "reads the dividend yield and the US listing's exchange" {
+    listed = [("AAPL", "XNAS"), ("SPY", "ARCX"), ("X", "TXSE")];
     serve({
         "metric?symbol=KO": (200, '{"metric": {"dividendYieldIndicatedAnnual": 3.1}}'),
-        "stock/symbol?exchange=US": (
-            200,
-            '[{"symbol": "AAPL", "mic": "XNAS"}, {"symbol": "SPY", "mic": "ARCX"}, {"symbol": "X", "mic": "TXSE"}]',
-        ),
+        "stock/symbol?exchange=US": ok([dict(symbol=s, mic=m) for (s, m) in listed]),
     });
     assert get_stock_metrics("KO") == 3.1
         and get_stock_metrics("AAPL") is None
@@ -237,17 +239,10 @@ def article(id: int, headline: str, when: int) -> dict[str, any] {
 }
 
 test "news picks company articles round-robin, newest first" {
+    apple: list[any] = [article(i, f"A{i}", 100 + i) for i in range(5)];
     serve({
-        "company-news?symbol=AAPL": (
-            200,
-            json.dumps(
-                [article(i, f"A{i}", 100 + i) for i in range(5)] + [{"id": 9, "headline": "no url"}]
-            ),
-        ),
-        "company-news?symbol=MSFT": (
-            200,
-            json.dumps([article(20 + i, f"M{i}", 200 + i) for i in range(5)]),
-        ),
+        "company-news?symbol=AAPL": ok(apple + [{"id": 9, "headline": "no url"}]),
+        "company-news?symbol=MSFT": ok([article(20 + i, f"M{i}", 200 + i) for i in range(5)]),
     });
     news = get_news(["aapl", "MSFT", "BINANCE:BTCUSDT", "7203.T"], company_source="Firma");
     assert [a.headline for a in news] == ["M2", "M1", "M0", "A2", "A1", "A0"];
@@ -272,12 +267,9 @@ test "news falls back to general market news, each article once" {
 }
 
 test "search answers the popular list for no query, and Finnhub's matches for one" {
-    serve({
-        "search?q=toyota%20motor": (
-            200,
-            '{"result": [{"symbol": "7203.t", "description": "TOYOTA", "type": "Common Stock"}, {"symbol": "TM"}, {"symbol": "BRK.B", "description": "BERKSHIRE"}]}',
-        ),
-    });
+    toyota = {"symbol": "7203.t", "description": "TOYOTA", "type": "Common Stock"};
+    berkshire = {"symbol": "BRK.B", "description": "BERKSHIRE"};
+    serve({"search?q=toyota%20motor": ok({"result": [toyota, {"symbol": "TM"}, berkshire]})});
     assert [s.symbol for s in search_stocks()][:2] == ["AAPL", "MSFT"]
         and len(search_stocks("  ")) == 10
         and not asked;
