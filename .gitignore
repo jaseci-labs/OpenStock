@@ -43,9 +43,13 @@ next-env.d.ts
 /dist/
 .vinext/
 .wrangler/
-/package.json
-/package-lock.json
-/node_modules/
+node_modules/
+/.jac/
+/eco/web/package.json
+/eco/web/package-lock.json
 
 # IDE
 .idea/
+/eco/web/package.json
+/eco/web/package-lock.json
+/eco/web/node_modules/
