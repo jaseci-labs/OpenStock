@@ -48,46 +48,33 @@ glob REGISTERED_USERS: str = "13,000+";
 # Partners share the app sidebar; the Partner tier sells exactly this many slots.
 glob SIDEBAR_SPONSOR_SLOTS: int = 3;
 
-glob SPONSOR_TIERS: list[Tier] = [
-    Tier(
-        "backer",
-        "Backer",
-        5,
-        "For people who use OpenStock and want it to stay free.",
-        ["Your name in the README sponsor list", "Our thanks, every month"],
-    ),
-    Tier(
-        "supporter",
-        "Supporter",
-        25,
-        "For regulars who want to be seen backing open source.",
-        ["Everything in Backer", "Name and avatar on the sponsor wall", "Listed on this page"],
-    ),
-    Tier(
-        "company",
-        "Company",
-        100,
-        "For teams and products that reach developers and investors.",
-        [
-            "Logo in the footer of every public page",
-            "Logo in the README",
-            "Logo on this page, linked to your site",
-        ],
-        featured=True,
-    ),
-    Tier(
-        "partner",
-        "Partner",
-        500,
-        "The most visible spots in OpenStock, limited to three.",
-        [
-            "Everything in Company",
-            f"One of three sponsor slots in the app sidebar, seen by {REGISTERED_USERS} registered users",
-            "Logo on the landing page",
-        ],
-        slots=SIDEBAR_SPONSOR_SLOTS,
-    ),
-];
+# Each tier: `id|name|monthly|blurb`, `|featured` or `|slots N` after it where they apply, then a line per perk.
+glob SPONSOR_TIERS: list[Tier] = [tier(*block.strip().splitlines()) for block in f"""
+backer|Backer|5|For people who use OpenStock and want it to stay free.
+Your name in the README sponsor list
+Our thanks, every month
+
+supporter|Supporter|25|For regulars who want to be seen backing open source.
+Everything in Backer
+Name and avatar on the sponsor wall
+Listed on this page
+
+company|Company|100|For teams and products that reach developers and investors.|featured
+Logo in the footer of every public page
+Logo in the README
+Logo on this page, linked to your site
+
+partner|Partner|500|The most visible spots in OpenStock, limited to three.|slots {SIDEBAR_SPONSOR_SLOTS}
+Everything in Company
+One of three sponsor slots in the app sidebar, seen by {REGISTERED_USERS} registered users
+Logo on the landing page
+""".strip().split("\n\n")];
+
+def tier(head: str, *perks: str) -> Tier {
+    f = head.split("|");
+    slots = [int(x.split()[1]) for x in f[4:] if x.startswith("slots ")];
+    return Tier(f[0], f[1], int(f[2]), f[3], list(perks), sum(slots), "featured" in f[4:]);
+}
 
 glob PROXY_SELLER_URL: str = "https://proxy-seller.com/?partner=0PC6QUN0HW8FI0";
 

@@ -38,12 +38,9 @@ test "a confirmed broadcast gives Kit's reply unchanged" {
     assert url == "https://api.convertkit.com/v3/broadcasts"
         and body["public"]
         and body["send_at"] > datetime.now(timezone.utc).isoformat();
-    assert {k: v for (k, v) in body.items() if k not in ("public", "send_at")} == {
-        "api_key": "test-api-key",
-        "api_secret": "test-api-secret",
-        "subject": "Weekly news",
-        "content": "<p>Summary</p>",
-    };
+    rest: dict[str, any] = {k: v for (k, v) in body.items() if k not in ("public", "send_at")};
+    keys: dict[str, any] = {"api_key": "test-api-key", "api_secret": "test-api-secret"};
+    assert rest == keys | {"subject": "Weekly news", "content": "<p>Summary</p>"};
 }
 
 test "other Kit failures are errors that carry Kit's reply" {
@@ -59,26 +56,15 @@ test "a subscriber joins the given form, or the welcome form, or is skipped with
         "subscription": {"id": 7},
     };
     add_subscriber("bo@example.com", "Bo", form_id="222");
-    assert sent == [
-        (
-            "https://api.convertkit.com/v3/forms/111/subscribe",
-            {
-                "api_key": "test-api-key",
-                "email": "ann@example.com",
-                "first_name": "Ann",
-                "fields": {"ai_intro": "hi"},
-            },
-        ),
-        (
-            "https://api.convertkit.com/v3/forms/222/subscribe",
-            {
-                "api_key": "test-api-key",
-                "email": "bo@example.com",
-                "first_name": "Bo",
-                "fields": {},
-            },
-        ),
-    ];
+    forms = "https://api.convertkit.com/v3/forms";
+    ann: dict[str, any] = {
+        "email": "ann@example.com",
+        "first_name": "Ann",
+        "fields": {"ai_intro": "hi"},
+    };
+    bo: dict[str, any] = {"email": "bo@example.com", "first_name": "Bo", "fields": {}};
+    key: dict[str, any] = {"api_key": "test-api-key"};
+    assert sent == [(f"{forms}/111/subscribe", key | ann), (f"{forms}/222/subscribe", key | bo)];
 }
 
 test "subscribers are listed with the secret, and nothing is asked without both credentials" {

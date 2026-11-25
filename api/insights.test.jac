@@ -45,27 +45,16 @@ def article(
     analyses: list[tuple[str, str, str]] = [],
     sources_count: int | None = None,
 ) -> dict[str, any] {
-    return {
-        "original": {
-            "uid": uid,
-            "title": title or f"Headline {uid}",
-            "url": url or f"https://publisher.example/{uid}",
-            "source": "publisher.example",
-            "source_domain": "publisher.example",
-            "time_published": "2026-11-19T05:05:14Z",
-        },
-        "enrichment": {
-            "relevance_score": relevance,
-            "category": "technology",
-            "ai_trading_insights": {
-                "ticker_analysis": [
-                    {"ticker": t, "impact_analysis": {"sentiment": s, "summary": m}}
-                    for (t, s, m) in analyses
-                ],
-            },
-        },
-        "sources_count": sources_count,
-    };
+    (site, when) = ("publisher.example", "2026-11-19T05:05:14Z");
+    original = dict(uid=uid, title=title or f"Headline {uid}", url=url or f"https://{site}/{uid}");
+    original |= dict(source=site, source_domain=site, time_published=when);
+    takes = [
+        {"ticker": t, "impact_analysis": {"sentiment": s, "summary": m}}
+        for (t, s, m) in analyses
+    ];
+    scored: dict[str, any] = {"relevance_score": relevance, "category": "technology"};
+    scored["ai_trading_insights"] = {"ticker_analysis": takes};
+    return {"original": original, "enrichment": scored, "sources_count": sources_count};
 }
 
 def page(results: list[any]) -> dict[str, any] {
@@ -228,12 +217,8 @@ test "get_alphai_news asks with the key in a header and keeps the answer for an 
     assert (news.items[0].id, news.items[0].sentiment, news.items[0].impact)
         == ("n1", "positive", "Demand holds.");
     assert ids(get_alphai_news("NVDA")) == ["n1"];
-    assert sent == [
-        (
-            "https://api.alphai.io/api/news/?symbol=NVDA&page_size=5&min_relevance=5&collapse=story",
-            {"Authorization": "Bearer test-key", "Accept": "application/json"},
-        ),
-    ];
+    url = "https://api.alphai.io/api/news/?symbol=NVDA&page_size=5&min_relevance=5&collapse=story";
+    assert sent == [(url, {"Authorization": "Bearer test-key", "Accept": "application/json"})];
     assert time.time() + 3590 < cache[sent[0][0]][0] <= time.time() + 3600;
 }
 

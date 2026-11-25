@@ -261,13 +261,8 @@ def parse_releases(text: str) -> list[Release] {
             releases[-1].sections[-1].items.append(rest);
         } elif mark == "@" {
             (prs, _, issues) = rest.partition(" issues");
-            releases[-1].credits.append(
-                Credit(
-                    prs.split()[0],
-                    [int(n) for n in prs.split()[1:]],
-                    [int(n) for n in issues.split()],
-                ),
-            );
+            (who, done) = (prs.split()[0], [int(n) for n in prs.split()[1:]]);
+            releases[-1].credits.append(Credit(who, done, [int(n) for n in issues.split()]));
         }
     }
     return releases;

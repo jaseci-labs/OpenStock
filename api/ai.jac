@@ -10,13 +10,15 @@ obj Provider {
         model: str;
 }
 
+# Each provider's name, base_url and model
 glob DEFAULTS: dict[str, dict[str, str]] = {
-         "gemini": {
-             "base_url": "https://generativelanguage.googleapis.com/v1beta/models",
-             "model": "gemini-2.5-flash-lite",
-         },
-         "minimax": {"base_url": "https://api.minimax.io/v1", "model": "MiniMax-M3.1-Flash"},
-         "siray": {"base_url": "https://api.siray.ai/v1", "model": "siray-1.0-ultra"},
+         r[0]: {"base_url": r[1], "model": r[2]}
+         for r in [
+             line.split()
+             for line in """gemini https://generativelanguage.googleapis.com/v1beta/models gemini-2.5-flash-lite
+minimax https://api.minimax.io/v1 MiniMax-M3.1-Flash
+siray https://api.siray.ai/v1 siray-1.0-ultra""".splitlines()
+         ]
      },
      # The only defaults the environment may replace; <NAME>_API_KEY is read for every provider.
      OVERRIDES: list[str] = ["GEMINI_MODEL", "MINIMAX_MODEL", "MINIMAX_BASE_URL"],
@@ -52,25 +54,18 @@ def ask_provider(prompt: str, name: str = "") -> str {
     if not p.api_key {
         raise RuntimeError(f"{p.name.upper()}_API_KEY is not set");
     }
+    url = f"{p.base_url}/chat/completions";
+    headers: dict[str, str] = {"Authorization": f"Bearer {p.api_key}"};
+    said = [{"role": "user", "content": prompt}];
+    body: any = {"model": p.model, "messages": said, "temperature": 0.7};
     if p.name == "gemini" {
-        (status, data) = send(
+        (url, headers) = (
             f"{p.base_url}/{p.model}:generateContent?key={p.api_key}",
-            {},
-            {"contents": [{"role": "user", "parts": [{"text": prompt}]}]},
-            TIMEOUT,
+            dict[str, str](),
         );
-    } else {
-        (status, data) = send(
-            f"{p.base_url}/chat/completions",
-            {"Authorization": f"Bearer {p.api_key}"},
-            {
-                "model": p.model,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.7,
-            },
-            TIMEOUT,
-        );
+        body = {"contents": [{"role": "user", "parts": [{"text": prompt}]}]};
     }
+    (status, data) = send(url, headers, body, TIMEOUT);
     if not 200 <= status < 300 {
         raise RuntimeError(f"{p.name} API error: {status}");
     }

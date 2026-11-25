@@ -55,10 +55,7 @@ def profile_problem(name: str, country: str, goal: str, risk: str, industry: str
     if len(name.strip()) < 2 or len(name.strip()) > 80 {
         return "nameLength";
     }
-    if len(country) != 2
-        or not has_between(country[0], "A", "Z")
-        or not has_between(country[1], "A", "Z")
-    {
+    if len(country) != 2 or not all([has_between(c, "A", "Z") for c in country]) {
         return "pickCountry";
     }
     if goal not in PROFILE_OPTIONS["investmentGoals"]
@@ -72,12 +69,7 @@ def profile_problem(name: str, country: str, goal: str, risk: str, industry: str
 
 test "password rules are the legacy four" {
     assert password_checks("") == {"min8": False, "upper": False, "lower": False, "number": False};
-    assert password_checks("abcdefgh") == {
-        "min8": True,
-        "upper": False,
-        "lower": True,
-        "number": False,
-    };
+    assert password_checks("abcdefgh") == dict(min8=True, upper=False, lower=True, number=False);
     assert not password_ok("Short1")
         and not password_ok("alllowercase1")
         and not password_ok("NoNumbers");
@@ -94,13 +86,8 @@ test "email shape" {
 }
 
 test "a username is derived from the email and fits the accounts plugin" {
-    for email in [
-        "Amy@Example.com",
-        "a@b.co",
-        "_.weird+tag@x.org",
-        "ünï@x.org",
-        "a-very-long-local-part-that-goes-on-and-on@example.com",
-    ] {
+    for email in """Amy@Example.com a@b.co _.weird+tag@x.org ünï@x.org
+        a-very-long-local-part-that-goes-on-and-on@example.com""".split() {
         name = username_for(email);
         assert 3 <= len(name) and len(name) <= 32, name;
         assert "@" not in name and name[0].isalnum(), name;

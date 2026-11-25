@@ -1,12 +1,7 @@
 test "every guide parses whole and is found by its slug" {
-    assert [g.slug for g in GUIDES] == [
-        "free-tradingview-alternative",
-        "self-hosted-stock-tracker",
-        "free-stock-watchlist",
-        "open-source-bloomberg-alternative",
-        "stock-market-app-for-students",
-        "track-nse-stocks",
-    ];
+    assert [g.slug for g in GUIDES] == """free-tradingview-alternative self-hosted-stock-tracker
+        free-stock-watchlist open-source-bloomberg-alternative stock-market-app-for-students
+        track-nse-stocks""".split();
     for g in GUIDES {
         assert g.kicker and g.title and g.description and g.lede, g.slug;
         assert len(g.sections) == 3 and len(g.faqs) == 3, g.slug;

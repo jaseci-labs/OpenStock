@@ -35,14 +35,7 @@ SSO_GOOGLE_CLIENT_ID|Google OAuth client ID (callback: <JAC_AUTH_ORIGIN>/__jac/a
 SSO_GOOGLE_CLIENT_SECRET|Google OAuth client secret
 """,
      # Read by the Next.js version only: safe to delete
-     GONE: list[str] = [
-         "MONGODB_URI",
-         "BETTER_AUTH_SECRET",
-         "INNGEST_SIGNING_KEY",
-         "INNGEST_EVENT_KEY",
-         "MONGO_ROOT_PASSWORD",
-         "FINNHUB_BASE_URL",
-     ];
+     GONE: list[str] = "MONGODB_URI BETTER_AUTH_SECRET INNGEST_SIGNING_KEY INNGEST_EVENT_KEY MONGO_ROOT_PASSWORD FINNHUB_BASE_URL".split();
 
 def dotenv(path: str = ".env") -> dict[str, str] {
     found: dict[str, str] = {};

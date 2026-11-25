@@ -53,17 +53,8 @@ def send_broadcast(subject: str, content: str) -> any {
     (key, secret) = credentials();
     # A minute ahead, so Kit has processed the broadcast before its send time
     send_at = (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat();
-    return call(
-        "broadcasts",
-        {
-            "api_key": key,
-            "api_secret": secret,
-            "subject": subject,
-            "content": content,
-            "public": True,
-            "send_at": send_at,
-        },
-    );
+    keys: dict[str, any] = {"api_key": key, "api_secret": secret, "subject": subject};
+    return call("broadcasts", keys | {"content": content, "public": True, "send_at": send_at});
 }
 
 """Kit's subscriber page: total_subscribers, page, total_pages, subscribers."""

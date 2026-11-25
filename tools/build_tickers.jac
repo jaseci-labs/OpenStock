@@ -24,17 +24,18 @@ glob UA: str = "OpenStock (opendevsociety@gmail.com)",
 # have to match the S&P 500 GICS sectors or the same industry splits into two headings.
 # An industry that is not here stops the run with a KeyError.
 glob ICB_TO_GICS: dict[str, str] = {
-    "Technology": "Information Technology",
-    "Telecommunications": "Communication Services",
-    "Health Care": "Health Care",
-    "Financials": "Financials",
-    "Real Estate": "Real Estate",
-    "Consumer Discretionary": "Consumer Discretionary",
-    "Consumer Staples": "Consumer Staples",
-    "Industrials": "Industrials",
-    "Basic Materials": "Materials",
-    "Energy": "Energy",
-    "Utilities": "Utilities",
+    i: g or i
+    for (i, _, g) in [line.partition("=") for line in """Technology=Information Technology
+Telecommunications=Communication Services
+Basic Materials=Materials
+Health Care
+Financials
+Real Estate
+Consumer Discretionary
+Consumer Staples
+Industrials
+Energy
+Utilities""".splitlines()]
 };
 
 def fetch(url: str, accept: str) -> str {
@@ -61,6 +62,11 @@ def parse_nasdaq100(page: str) -> list[tuple[str, str, str, str]] {
     return rows;
 }
 
+"""One ticker of the JSON file, its fields in the file's order."""
+def row(*values: any) -> dict[str, any] {
+    return dict(zip("symbol name exchange sector subIndustry cik indexes".split(), values));
+}
+
 def build(sp_csv: str, ndx_page: str, sec_json: str) -> list[dict[str, any]] {
     # SEC rows are [cik, name, ticker, exchange].
     sec: dict[str, list[any]] = {
@@ -69,18 +75,14 @@ def build(sp_csv: str, ndx_page: str, sec_json: str) -> list[dict[str, any]] {
         if r[2]
     };
     found: dict[str, dict[str, any]] = {};
-    for row in csv.DictReader(sp_csv.splitlines()) {
-        symbol = row["Symbol"].strip().upper();
+    for r in csv.DictReader(sp_csv.splitlines()) {
+        symbol = r["Symbol"].strip().upper();
         hit = sec.get(symbol) or sec.get(symbol.replace(".", "-")) or ["", "", "", ""];
-        found[symbol] = {
-            "symbol": symbol,
-            "name": row["Security"].strip(),
-            "exchange": hit[3] or "",
-            "sector": row["GICS Sector"].strip(),
-            "subIndustry": row["GICS Sub-Industry"].strip(),
-            "cik": str(row["CIK"] or hit[0]).lstrip("0"),
-            "indexes": ["SP500"],
-        };
+        (sector, sub) = (r["GICS Sector"].strip(), r["GICS Sub-Industry"].strip());
+        cik = str(r["CIK"] or hit[0]).lstrip("0");
+        found[symbol] = row(
+            symbol, r["Security"].strip(), hit[3] or "", sector, sub, cik, ["SP500"]
+        );
     }
     for (symbol, name, industry, sub) in parse_nasdaq100(ndx_page) {
         if symbol in found {
@@ -88,15 +90,10 @@ def build(sp_csv: str, ndx_page: str, sec_json: str) -> list[dict[str, any]] {
             continue;
         }
         hit = sec.get(symbol) or sec.get(symbol.replace(".", "-")) or ["", "", "", ""];
-        found[symbol] = {
-            "symbol": symbol,
-            "name": name,
-            "exchange": hit[3] or "Nasdaq",
-            "sector": ICB_TO_GICS[industry],
-            "subIndustry": sub,
-            "cik": str(hit[0]),
-            "indexes": ["NDX100"],
-        };
+        exchange = hit[3] or "Nasdaq";
+        found[symbol] = row(
+            symbol, name, exchange, ICB_TO_GICS[industry], sub, str(hit[0]), ["NDX100"]
+        );
     }
     return [found[s] for s in sorted(found)];
 }

@@ -2,11 +2,36 @@
 import from "@jac/runtime" { Link, __getLocalStorage, __setLocalStorage }
 import from "lucide-react" { ArrowDownRight, ArrowUpRight }
 
-glob TH: str = "px-3 py-2 font-medium",
-     TD: str = "num px-3 py-2 text-end";
+glob TD: str = "num px-3 py-2 text-end",
+     ROW: str = "border-t border-line/60 transition-colors hover:bg-hover/40",
+     MOVER: str = "flex items-center gap-3 rounded-[10px] px-3 py-2 transition-colors hover:bg-hover/60",
+     HEADS: list[list[str]] = [
+         ["px-3 py-2 font-medium", "WatchlistTable.headers.company"],
+         ["px-3 py-2 font-medium text-end", "WatchlistTable.headers.price"],
+         ["px-3 py-2 font-medium text-end max-sm:hidden", "WatchlistTable.headers.change"],
+         ["px-3 py-2 font-medium text-end", "YahooQuotes.changePercent"],
+     ];
 
 def stock_path(tv_symbol: str) -> str {
     return f"/stocks/{yahoo_app_symbol(tv_symbol)}";
+}
+
+def QuoteRow(s: tuple[str, str], q: DailyQuote | None) -> JsxElement {
+    code = yahoo_app_symbol(s[0]);
+    change = ("+" if q.change > 0 else "") + grouped(q.change) if q else "—";
+    tone = "text-down" if q and q.change < 0 else "text-up";
+    return <tr className={ROW}>
+        <td className="px-3 py-2">
+            <Link to={stock_path(s[0])} className="font-semibold hover:text-brand-ink">{s[1]} <span
+                className="mono text-[11px] text-faint"
+            >{code}</span></Link>
+        </td>
+        <td className={cx(TD, "font-semibold")}>{grouped(q.price) if q else "—"}</td>
+        <td className={cx(TD, "max-sm:hidden", tone)}>{change}</td>
+        <td className="px-3 py-2 text-end">
+            <ChangePill value={q.change_percent if q else None} />
+        </td>
+    </tr>;
 }
 
 # Our own quotes table for Yahoo-priced markets: TradingView's market-quotes widget shows no TADAWUL
@@ -17,12 +42,7 @@ def YahooQuotes(market: Market, daily: dict[str, DailyQuote]) -> JsxElement {
         <table className="w-full text-[13px]">
             <thead>
                 <tr className="text-start text-faint">
-                    <th className={TH}>{t("WatchlistTable.headers.company")}</th>
-                    <th className={cx(TH, "text-end")}>{t("WatchlistTable.headers.price")}</th>
-                    <th className={cx(TH, "text-end max-sm:hidden")}>
-                        {t("WatchlistTable.headers.change")}
-                    </th>
-                    <th className={cx(TH, "text-end")}>{t("YahooQuotes.changePercent")}</th>
+                    {[<th key={h[1]} className={h[0]}>{t(h[1])}</th> for h in HEADS]}
                 </tr>
             </thead>
             {[
@@ -34,33 +54,7 @@ def YahooQuotes(market: Market, daily: dict[str, DailyQuote]) -> JsxElement {
                     </tr>
                     {
                         for s in g.symbols {
-                            q = daily.get(s[0]);
-                            <tr
-                                key={s[0]}
-                                className="border-t border-line/60 transition-colors hover:bg-hover/40"
-                            >
-                                <td className="px-3 py-2">
-                                    <Link
-                                        to={stock_path(s[0])}
-                                        className="font-semibold hover:text-brand-ink"
-                                    >{s[1]} <span className="mono text-[11px] text-faint">
-                                        {yahoo_app_symbol(s[0])}
-                                    </span></Link>
-                                </td>
-                                <td className={cx(TD, "font-semibold")}>
-                                    {grouped(q.price) if q else "—"}
-                                </td>
-                                <td
-                                    className={cx(TD, "max-sm:hidden", "text-down" if q and q.change < 0 else "text-up")}
-                                >
-                                    {("+" if q.change > 0 else "") + grouped(q.change)
-                                        if q
-                                        else "—"}
-                                </td>
-                                <td className="px-3 py-2 text-end">
-                                    <ChangePill value={q.change_percent if q else None} />
-                                </td>
-                            </tr>
+                            <QuoteRow key={s[0]} {s} q={daily.get(s[0])} />
                         }
                     }
                 </tbody>
@@ -92,10 +86,7 @@ def YahooMovers(market: Market, daily: dict[str, DailyQuote]) -> JsxElement {
                 move = daily[s].change_percent;
                 up = move >= 0;
                 <li key={s}>
-                    <Link
-                        to={stock_path(s)}
-                        className="flex items-center gap-3 rounded-[10px] px-3 py-2 transition-colors hover:bg-hover/60"
-                    >
+                    <Link to={stock_path(s)} className={MOVER}>
                         <span className={"text-up" if up else "text-down"}>
                             {<ArrowUpRight className="size-4" />
                                 if up
@@ -122,6 +113,13 @@ def YahooMovers(market: Market, daily: dict[str, DailyQuote]) -> JsxElement {
             }
         }
     </ul>;
+}
+
+# A full-height TradingView widget in the user's language
+def Wide(widget: str, extra: dict[str, any] = {}, expand: bool = False) -> JsxElement {
+    loc = locale();
+    config = widget_config(widget, loc, extra);
+    return <TradingView {widget} {config} height={560} {expand} {loc} />;
 }
 
 def:pub page -> JsxPage {
@@ -153,14 +151,31 @@ def:pub page -> JsxPage {
         }
     }
 
+    def pick(to: str) {
+        id = to;
+        __setLocalStorage("openstock-market", to);
+    }
+
     if not found {
         return <Loading />;
     }
     market = found[0];
+    ids = [m.id for m in all];
     name = t(f"Markets.names.{market.id}");
     feed = message_key(market.feed);
     groups = [(t(f"Markets.groups.{message_key(g.title)}"), g.symbols) for g in market.groups];
     native = any([p.finnhub for p in market.pulse]);
+    status = "open" if market.id in open_ids else "closed";
+    pulse_sub = t("Dashboard.pulseSubFinnhub")
+        if native
+        else t("Dashboard.pulseSubYahoo")
+            if market.yahoo
+            else t("Dashboard.pulseSubTradingView", {"feed": feed});
+    quoted = [
+        {"name": g[0], "symbols": [{"name": s[0], "displayName": s[1]} for s in g[1]]}
+        for g in groups
+    ];
+    tabs = [{"title": g[0], "symbols": [{"s": s[0], "d": s[1]} for s in g[1]]} for g in groups];
     heat = {"stocks": "stock-heatmap", "crypto": "crypto-coins-heatmap"}.get(market.heatmap, "");
     quotes_panel = <Panel
         title={t("Dashboard.quotesTitle")}
@@ -168,48 +183,23 @@ def:pub page -> JsxPage {
     >
         {<YahooQuotes {market} {daily} />
             if market.yahoo
-            else <TradingView
-                widget="market-quotes"
-                height={560}
-                config={widget_config("market-quotes", loc, {"symbolsGroups": [{"name": g[0], "symbols": [{"name": s[0], "displayName": s[1]} for s in g[1]]} for g in groups]})}
-            />}
+            else <Wide widget="market-quotes" extra={{"symbolsGroups": quoted}} />}
     </Panel>;
     return <>
         <header className="page-head">
             <div>
                 <h1 className="page-title">{t("Dashboard.title")}</h1>
                 <p className="page-sub">
-                    {t(
-                        "Dashboard.sub",
-                        {
-                            "market": name,
-                            "status": "open" if market.id in open_ids else "closed",
-                            "feed": feed,
-                        },
-                    )}
+                    {t("Dashboard.sub", {"market": name, "status": status, "feed": feed})}
                 </p>
             </div>
         </header>
-        <MarketSwitcher
-            markets={[m.id for m in all]}
-            active={market.id}
-            openIds={open_ids}
-            onPick={lambda (to: str) {
-                id = to;
-                __setLocalStorage("openstock-market", to);
-            }}
-        />
+        <MarketSwitcher markets={ids} active={market.id} openIds={open_ids} onPick={pick} />
         <section className="hatch">
             <div className="section-head">
                 <div>
                     <h2 className="section-title">{t("Dashboard.pulseTitle")}</h2>
-                    <p className="section-sub">
-                        {t("Dashboard.pulseSubFinnhub")
-                            if native
-                            else t("Dashboard.pulseSubYahoo")
-                                if market.yahoo
-                                else t("Dashboard.pulseSubTradingView", {"feed": feed})}
-                    </p>
+                    <p className="section-sub">{pulse_sub}</p>
                 </div>
                 {<DataFreshness {loc} {realtime} /> if native else None}
             </div>
@@ -223,24 +213,12 @@ def:pub page -> JsxPage {
                 </Panel>
                     if market.yahoo
                     else <Panel title={t("Dashboard.leadersTitle")} sub={t("Dashboard.leadersSub")}>
-                        <TradingView
-                            widget="market-overview"
-                            height={560}
-                            config={widget_config("market-overview", loc, {"tabs": [{"title": g[0], "symbols": [{"s": s[0], "d": s[1]} for s in g[1]]} for g in groups]})}
-                        />
+                        <Wide widget="market-overview" extra={{"tabs": tabs}} />
                     </Panel>}
                 {<Panel
                     title={t("Dashboard.stockHeatmapTitle" if market.heatmap == "stocks" else "Dashboard.cryptoHeatmapTitle")}
                     sub={t("Dashboard.heatmapSub")}
-                >
-                    <TradingView
-                        widget={heat}
-                        config={widget_config(heat, loc, {})}
-                        height={560}
-                        expand
-                        {loc}
-                    />
-                </Panel>
+                ><Wide widget={heat} expand /></Panel>
                     if heat
                     else quotes_panel}
             </div>
@@ -250,13 +228,7 @@ def:pub page -> JsxPage {
                     title={t("Dashboard.storiesTitle")}
                     sub={t("Dashboard.storiesSub")}
                     className={"" if heat else "xl:col-span-2"}
-                >
-                    <TradingView
-                        widget="timeline"
-                        config={widget_config("timeline", loc, {"market": market.news})}
-                        height={560}
-                    />
-                </Panel>
+                ><Wide widget="timeline" extra={{"market": market.news}} /></Panel>
             </div>
         </div>
     </>;

@@ -35,9 +35,8 @@ obj RecentFailure(Exception) {}
 """How fresh market numbers are: "cached" (the default, a public instance: quotes refresh hourly, shared by every
 user) or "realtime" (OpenStock Cloud, or self-hosted with your own Finnhub keys: quotes refresh every 15s)."""
 def:pub data_mode -> str {
-    return "realtime"
-        if os.environ.get("NEXT_PUBLIC_OPENSTOCK_DATA_MODE") == "realtime"
-        else "cached";
+    realtime = os.environ.get("NEXT_PUBLIC_OPENSTOCK_DATA_MODE") == "realtime";
+    return "realtime" if realtime else "cached";
 }
 
 """Email price alerts are on in realtime mode only, off on the free hourly site."""
@@ -93,10 +92,7 @@ def num(v: any, fallback: float = 0.0) -> float {
 """data[a][b]..., or None where the path ends early."""
 def dig(data: any, *path: str | int) -> any {
     try {
-        for key in path {
-            data = data[key];
-        }
-        return data;
+        return data if not path else dig(data[path[0]], *path[1:]);
     } except Exception {
         return None;
     }
@@ -165,8 +161,7 @@ def fetch_json(url: str, ttl: int = 0) -> any {
     if not ttl {
         return request(url);
     }
-    now = time.time();
-    hit = cache.get(url);
+    (now, hit) = (time.time(), cache.get(url));
     if hit is None or (hit.failed and hit.fresh_until < now) {
         return refresh(url, ttl);
     }
@@ -470,10 +465,6 @@ glob POPULAR_STOCKS: list[Stock] = [
         "AMD=Advanced Micro Devices Inc=NASDAQ, JPM=JPMorgan Chase & Co=NYSE").split(", ")
 ];
 
-glob FINNHUB_SUFFIXES: set[str] = set(
-    "AS AT AX BA BK BO BR CO DE F HE HK IL IS JK JO KL KQ KS L LS MC MI MX NS NZ OL PA PR SA SI SR SS ST SW SZ T TA TO TW TWO V VI WA".split(),
-);
-
 def signed_in -> bool {
     try {
         return root is not None;
@@ -492,16 +483,13 @@ def:pub search_stocks(query: str = "") -> list[Stock] {
         return [];
     }
     found = dig(finnhub("search", query, f"/search?q={enc(query.strip())}", 1800), "result");
-    return [
-        Stock(
-            s,
-            r.get("description") or s,
-            s.rpartition(".")[2] if "." in s and s.rpartition(".")[2] in FINNHUB_SUFFIXES else "US",
-            r.get("type") or "Stock",
-        )
-        for (s, r) in [
-            (str(r.get("symbol") or "").upper(), r)
-            for r in (found if isinstance(found, list) else [])[:15]
-        ]
-    ];
+    return [stock_of(r) for r in (found if isinstance(found, list) else [])[:15]];
+}
+
+"""A search match; its exchange is the symbol's Finnhub suffix (7203.T -> T), else US."""
+def stock_of(r: any) -> Stock {
+    s = str(r.get("symbol") or "").upper();
+    (_, dot, suffix) = s.rpartition(".");
+    exchange = suffix if dot and suffix in TV_EXCHANGE else "US";
+    return Stock(s, r.get("description") or s, exchange, r.get("type") or "Stock");
 }
