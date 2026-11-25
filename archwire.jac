@@ -209,6 +209,11 @@ graph import {
         CTA_GHOST,
         MAILTO,
         use_anchor,
+        rows,
+        Hatch,
+        Live,
+        MUTED,
+        LINK,
     }
     content.site ++> pages.sponsor { DISCORD_URL, RepoStats, format_count, sponsor_checkout_url }
     content.sponsors ++> pages.sponsor {
