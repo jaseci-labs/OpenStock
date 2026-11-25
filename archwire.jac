@@ -82,7 +82,7 @@ graph import {
     ui.i18n ++> ui.session { t }
     ui.i18n ++> ui.forms { t, locale, message_key }
     ui.i18n ++> ui.shell { t, rich, locale, set_locale, LOCALES, LOCALE_NAMES }
-    ui.i18n ++> pages.layout { locale, is_rtl }
+    ui.i18n ++> pages.layout { locale }
     ui.i18n ++> "pages/sign-in" | "pages/sign-up" | "pages/forgot-password" | "pages/reset-password" {
         t,
     }

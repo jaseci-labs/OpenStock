@@ -36,10 +36,6 @@ def:pub set_locale(code: str) {
     }
 }
 
-def:pub is_rtl(code: str) -> bool {
-    return code == "ar";
-}
-
 def lookup(loc: str, key: str) -> any {
     found: any = MESSAGES[loc];
     for part in key.split(".") {

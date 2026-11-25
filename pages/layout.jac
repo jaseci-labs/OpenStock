@@ -58,7 +58,7 @@ def:pub layout -> JsxLayout {
     async can with [kind] entry {
         loc = "en" if kind == "site" else locale();
         document.documentElement.lang = loc;
-        document.documentElement.dir = "rtl" if is_rtl(loc) else "";
+        document.documentElement.dir = "rtl" if loc == "ar" else "";
         if kind != "site" {
             signed = await load_user();
             if signed != (kind == "app") {
