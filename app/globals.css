@@ -740,9 +740,6 @@
     .form-input {
         @apply h-12 px-3 py-3 text-foreground text-base bg-card placeholder:text-faint border-line rounded-[11px] focus:!border-brand focus-visible:ring-0;
     }
-    .select-trigger {
-        @apply w-full !h-12 px-3 py-3 text-base border-line bg-card text-foreground rounded-[11px] focus:!border-brand focus-visible:ring-0;
-    }
     .country-select-trigger {
         @apply h-12 px-3 py-3 text-base w-full justify-between font-normal border-line bg-card text-foreground rounded-[11px] hover:bg-hover focus:!border-brand;
     }
