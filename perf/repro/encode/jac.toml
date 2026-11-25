@@ -1,0 +1,6 @@
+[project]
+name = "encode"
+version = "0.1.0"
+
+[check.lint]
+select = ["style"]

@@ -1,6 +1,8 @@
 [project]
 name = "openstock"
 version = "0.1.0"
+# perf/ holds the benchmark scripts and the neojac reproductions PERF.md cites, each its own program
+exclude = ["perf", "perf/*"]
 
 [check.lint]
 select = ["style"]
