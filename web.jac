@@ -1,5 +1,12 @@
 import "./styles/globals.css";
 
+# A language switch shows every page again: the key remounts what is under it
 def:pub app(children: any) -> JsxElement {
-    return <div className="min-h-screen">{children}</div>;
+    has loc: str = locale();
+
+    can with entry {
+        window.addEventListener("localechange", lambda { loc = locale(); });
+    }
+
+    return <><div key={loc} className="contents">{children}</div><Toasts /></>;
 }
