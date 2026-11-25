@@ -163,7 +163,7 @@ graph import {
     content.site ++> pages.help { REPO_URL, DISCORD_URL }
     content.sponsors ++> pages.help | pages.terms { SPONSOR_CONTACT_EMAIL }
     ui.site ++> pages.terms { PageHero, SectionHead }
-    ui.site ++> "pages/api-docs" { PageHero, SectionHead, IconCard, Go }
+    ui.site ++> "pages/api-docs" { PageHero, SectionHead, IconCard, Go, rows, Band, Hatch }
     content.site ++> "pages/api-docs" { REPO_URL }
     content.changelog ++> "pages/api-docs" { RELEASES }
     ui.site ++> pages.love { PageHero, SectionHead, SponsorLink, Go, CTA, CTA_GHOST }
