@@ -175,7 +175,20 @@ graph import {
         PREVIOUS_SUPPORTERS,
         tier_name,
     }
-    ui.site ++> pages.index { SectionHead, IconCard, SponsorLink, Go, CTA, CTA_GHOST, use_anchor }
+    ui.site ++> pages.index {
+        SectionHead,
+        IconCard,
+        SponsorLink,
+        Go,
+        CTA,
+        CTA_GHOST,
+        MUTED,
+        use_anchor,
+        rows,
+        Band,
+        Hatch,
+        Live,
+    }
     ui.market ++> pages.index { ProductPreview }
     content.site ++> pages.index {
         REPO_URL,
