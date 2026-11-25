@@ -345,8 +345,8 @@ def:pub MarketSwitcher(
 }
 
 def Sidebar(user: dict[str, str], watchlist: list[dict[str, str]], path: str) -> JsxElement {
-    partners = [s for s in ACTIVE_SPONSORS if s["tier"] == "partner"][:3];
-    free = 3 - len(partners);
+    partners = sidebar_sponsors();
+    free = SIDEBAR_SPONSOR_SLOTS - len(partners);
     name = user.get("name", "");
     return <aside className="sidebar">
         <Link to="/dashboard" className="px-2 pt-1 pb-2" aria-label={t("Sidebar.homeAria")}>
@@ -413,9 +413,9 @@ def Sidebar(user: dict[str, str], watchlist: list[dict[str, str]], path: str) ->
         <div className="flex flex-col gap-1.5">
             {[
                 <SponsorLink
-                    key={s["name"]}
+                    key={s.name}
                     sponsor={s}
-                    title={s["name"]}
+                    title={s.name}
                     className="flex h-11 items-center gap-2.5 rounded-[11px] px-3 shadow-[inset_0_0_0_1px_var(--line)] transition-colors hover:bg-white/5"
                 >
                     <SponsorMark
@@ -434,7 +434,7 @@ def Sidebar(user: dict[str, str], watchlist: list[dict[str, str]], path: str) ->
                 <span className="kicker flex items-center gap-1.5 text-brand-ink"><span
                     className="live-dot"
                 /> {t("Sidebar.sponsorSlotsOpen")
-                    if free == 3
+                    if free == SIDEBAR_SPONSOR_SLOTS
                     else t("Sidebar.sponsorSlotsLeft", {"count": free})}</span>
                 <span
                     className="text-[12.5px] text-faint transition-colors group-hover:text-muted-foreground"
@@ -635,7 +635,7 @@ def:pub AppShell(
 }
 
 # The sign-in pages' frame: the form on one side, the founder's words over a product preview on the other
-def:pub AuthLayout(children: any, preview: any = None) -> JsxElement {
+def:pub AuthLayout(children: any) -> JsxElement {
     return <main className="auth-layout">
         <section className="auth-left-section scrollbar-hide-default">
             <Link to="/" className="auth-logo flex items-center gap-2">
@@ -673,14 +673,7 @@ def:pub AuthLayout(children: any, preview: any = None) -> JsxElement {
                 </div>
             </div>
             <div className="relative flex-1" aria-hidden>
-                <div className="auth-dashboard-preview absolute top-0">
-                    {preview
-                        or <img
-                            src="/assets/images/dashboard.png"
-                            alt=""
-                            className="rounded-[18px] shadow-[0_0_0_1px_oklch(1_0_0/0.05),0_30px_80px_oklch(0_0_0/0.55)]"
-                        />}
-                </div>
+                <div className="auth-dashboard-preview absolute top-0"><ProductPreview /></div>
             </div>
         </section>
     </main>;

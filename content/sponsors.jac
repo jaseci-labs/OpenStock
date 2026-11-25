@@ -168,6 +168,10 @@ def tier_border(tier: str) -> str {
     return f"color-mix(in oklch, {TIER_COLOR[tier]} 55%, transparent)";
 }
 
+def tier_name(tier: str) -> str {
+    return {t.id: t.name for t in SPONSOR_TIERS}.get(tier, "Sponsor");
+}
+
 def sidebar_sponsors -> list[Sponsor] {
     return [s for s in ACTIVE_SPONSORS if s.tier == "partner"][:SIDEBAR_SPONSOR_SLOTS];
 }

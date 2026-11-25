@@ -1,7 +1,4 @@
-"""The signed-in caller's profile, and what the public header shows of the repository."""
-import json;
-import time;
-import urllib.request;
+"""The signed-in caller's profile."""
 
 # Onboarding answers live on the caller's own root; the accounts plugin keeps only the sign-in
 node Profile {
@@ -12,9 +9,6 @@ node Profile {
         risk_tolerance: str = "",
         preferred_industry: str = "";
 }
-
-glob stars: int = 0,
-     stars_read: float = 0.0;
 
 # Hook: the welcome email is connected here
 def on_signed_up(profile: Profile) {}
@@ -84,19 +78,4 @@ def:protect update_profile(
         );
     }
     return problem;
-}
-
-# The repository's star count for the public header, read from GitHub once a day; 0 hides it
-def:pub repo_stars -> int {
-    if time.time() - stars_read > 86400.0 {
-        stars_read = time.time();
-        try {
-            with urllib.request.urlopen(
-                "https://api.github.com/repos/Open-Dev-Society/OpenStock", timeout=4
-            ) as reply {
-                stars = int(json.loads(reply.read()).get("stargazers_count", 0));
-            }
-        } except Exception {}
-    }
-    return stars;
 }

@@ -25,18 +25,8 @@ def:pub page -> JsxPage {
             title="Tools for everyone."
             sub="We believe financial intelligence shouldn’t be locked behind paywalls. OpenStock is built by the community, for the community."
         >
-            <a
-                href={REPO_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-primary h-11 px-5 text-[15px]"
-            >See the code</a>
-            <a
-                href={GOOD_FIRST_ISSUES_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-ghost h-11 px-5 text-[15px]"
-            >Contribute</a>
+            <Go to={REPO_URL} className={CTA}>See the code</Go>
+            <Go to={GOOD_FIRST_ISSUES_URL} className={CTA_GHOST}>Contribute</Go>
         </PageHero>
         <section className="mx-auto mt-20 max-w-[1200px] px-5">
             <SectionHead kicker="Principles" title="What we won’t compromise on." />
@@ -65,12 +55,10 @@ def:pub page -> JsxPage {
                             banner. Our mission is to democratise software by building high-quality, open-source alternatives to
                             proprietary platforms.
                         </p>
-                        <a
-                            href="https://github.com/Open-Dev-Society"
-                            target="_blank"
-                            rel="noreferrer"
+                        <Go
+                            to="https://github.com/Open-Dev-Society"
                             className="btn btn-ghost mt-2 self-start"
-                        >Open Dev Society on GitHub</a>
+                        >Open Dev Society on GitHub</Go>
                     </div>
                     <div
                         className="relative grid aspect-square max-h-[340px] place-items-center rounded-[16px] bg-page shadow-[inset_0_0_0_1px_var(--line)]"

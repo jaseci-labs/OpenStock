@@ -93,9 +93,9 @@ def:pub page -> JsxPage {
             </div>
             <p className="mt-8 text-muted-foreground">
                 Questions about these terms? Email <a
-                href={f"mailto:{CONTACT_EMAIL}"}
+                href={f"mailto:{SPONSOR_CONTACT_EMAIL}"}
                 className="font-semibold text-brand-ink hover:underline"
-            >{CONTACT_EMAIL}</a>.
+            >{SPONSOR_CONTACT_EMAIL}</a>.
             </p>
         </section>
     </>;
