@@ -40,8 +40,7 @@ def:pub page -> JsxPage {
     }
 
     return <>
-        <h1 className="form-title mb-2">{t("SignUp.title")}</h1>
-        <p className="mb-8 text-faint">{t("SignUp.subtitle")}</p>
+        <AuthHead ns="SignUp" />
         <SocialButtons />
         <form onSubmit={submit} noValidate className="flex flex-col gap-8">
             <section className="flex flex-col gap-4" aria-label={t("SignUp.accountSection")}>
@@ -53,13 +52,11 @@ def:pub page -> JsxPage {
                     onInput={lambda (v: str) { name = v; }}
                     error={t("SignUp.fullNameRequired") if tried and len(name.strip()) < 2 else ""}
                 />
-                <Field
-                    name="email"
-                    label={t("AuthFields.email")}
-                    placeholder="you@example.com"
+                <EmailField
                     value={email}
                     onInput={lambda (v: str) { email = v; }}
-                    error={email_problem(email) if tried else ""}
+                    {tried}
+                    placeholder="you@example.com"
                 />
                 <div className="flex flex-col gap-2">
                     <Field

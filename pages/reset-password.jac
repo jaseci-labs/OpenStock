@@ -47,8 +47,7 @@ def:pub page -> JsxPage {
     }
 
     return <>
-        <h1 className="form-title">{t("ResetPassword.title")}</h1>
-        <p className="mb-6 text-sm text-gray-400">{t("ResetPassword.subtitle")}</p>
+        <AuthHead ns="ResetPassword" quiet />
         <form onSubmit={submit} noValidate className="space-y-5">
             <Field
                 name="newPassword"
@@ -69,18 +68,13 @@ def:pub page -> JsxPage {
                 onInput={lambda (v: str) { confirm = v; }}
                 error={confirm_problem() if tried else ""}
             />
-            <SubmitButton
+            <AuthEnd
                 {busy}
-                label={t("ResetPassword.submit")}
-                busyLabel={t("ResetPassword.submitting")}
-                className="yellow-btn mt-5 w-full"
-            />
-            <FooterLink
-                text={t("ResetPassword.needFreshLink")}
-                linkText={t("ResetPassword.requestAnother")}
+                ns="ResetPassword"
+                text="needFreshLink"
+                link="requestAnother"
                 href="/forgot-password"
             />
-            <Branding className="mt-10 flex justify-center" />
         </form>
     </>;
 }
