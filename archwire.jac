@@ -88,7 +88,7 @@ graph import {
     }
     ui.kit ++> web { Toasts }
     ui.kit ++> ui.forms { cx, Menu }
-    ui.kit ++> ui.shell { cx, Dialog, Menu, MenuItem, toast_error, toast_ok }
+    ui.kit ++> ui.shell { cx, listen, Dialog, Menu, MenuItem, toast_error, toast_ok }
     ui.kit ++> pages.layout { Loading }
     ui.kit ++> "pages/sign-in" | "pages/sign-up" { toast_error }
     ui.kit ++> "pages/forgot-password" | "pages/reset-password" { toast_error, toast_ok }

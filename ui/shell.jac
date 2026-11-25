@@ -25,12 +25,13 @@ glob PINNED: list[str] = ["/dashboard", "/watchlist"],
          "/watchlist": "watchlist",
          "/profile": "profile",
      },
+     PAGE_ICONS: dict[str, any] = {"/dashboard": LayoutDashboard, "/watchlist": Star},
      MAX_TABS: int = 12,
      RESOURCES: list[list[any]] = [
-         ["/help", "help", LifeBuoy],
-         ["/api-docs", "apiDocs", Code2],
-         ["/about", "about", Info],
-         ["/terms", "terms", BookOpen],
+         ["/help", "Sidebar.resources.help", LifeBuoy],
+         ["/api-docs", "Sidebar.resources.apiDocs", Code2],
+         ["/about", "Sidebar.resources.about", Info],
+         ["/terms", "Sidebar.resources.terms", BookOpen],
      ],
      DONATE_COOLDOWN_MS: int = 24 * 60 * 60 * 1000,
      DISMISSED: str = "opendevsociety-donate-popup-dismissed",
@@ -47,6 +48,9 @@ glob PINNED: list[str] = ["/dashboard", "/watchlist"],
      BOXED: str = "rounded-[11px] shadow-[inset_0_0_0_1px_var(--line)] transition-colors hover:bg-white/5",
      ME: str = "-m-1 flex min-w-0 flex-1 items-center gap-2.5 rounded-[10px] p-1 transition-colors hover:bg-white/5",
      INITIAL: str = "grid size-8 flex-none place-items-center rounded-full bg-brand-soft text-[13px] font-bold text-brand-ink",
+     NAMED: str = "block truncate text-[13px] font-semibold text-foreground rtl:text-right",
+     PITCH: str = "text-[12.5px] text-faint transition-colors group-hover:text-muted-foreground",
+     SHADE: str = "fixed inset-0 z-40 bg-page/60 backdrop-blur-[2px] lg:hidden",
      STRETCHED: str = "flex min-w-0 flex-1 items-center gap-2 before:absolute before:inset-0 before:content-['']",
      DRAWER: str = "min-h-0 max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:rtl:left-auto max-lg:rtl:right-0 max-lg:z-50 max-lg:w-[272px] max-lg:transition-transform max-lg:duration-200",
      DRAWER_SHUT: str = "max-lg:-translate-x-full max-lg:rtl:translate-x-full";
@@ -75,28 +79,26 @@ def Result(
     onAdd: Callable[[Stock], any],
 ) -> JsxElement {
     vars: dict[str, any] = {"symbol": stock.symbol, "list": target.get("name", "")};
-    add = <button
-        type="button"
-        onClick={lambda { onAdd(stock) }}
-        disabled={adding != ""}
-        className="pill h-7 shrink-0"
-        title={t("SearchCommand.addTitle", vars)}
-    ><Plus className="size-3.5" /> {t(
-        "SearchCommand.adding" if adding == stock.symbol else "SearchCommand.add"
-    )}</button>;
+    said = t("SearchCommand.adding" if adding == stock.symbol else "SearchCommand.add");
+    tip = t("SearchCommand.addTitle", vars);
+    add = lambda { onAdd(stock) };
+    busy = adding != "";
+    look = "pill h-7 shrink-0";
+    inner = <><Plus className="size-3.5" /> {said}</>;
+    button = <button type="button" onClick={add} disabled={busy} className={look} title={tip}>
+        {inner}
+    </button>;
     where = " · ".join([str(x) for x in [stock.exchange, stock.kind] if x]);
+    pick = lambda (e: any) -> any { onPick(e, stock) };
+    link = cx("search-item-link group", target and "min-w-0 flex-1");
     return <li className={cx("search-item", target and "flex items-center gap-1 pe-2")}>
-        <Link
-            to={f"/stocks/{stock.symbol}"}
-            onClick={lambda (e: any) -> any { onPick(e, stock) }}
-            className={cx("search-item-link group", target and "min-w-0 flex-1")}
-        >
+        <Link to={f"/stocks/{stock.symbol}"} onClick={pick} className={link}>
             <span className={SYMBOL}>{stock.symbol}</span>
             <span className="search-item-name flex-1">{stock.name}</span>
             <span className="hidden max-w-40 truncate text-xs text-faint sm:block">{where}</span>
             <ArrowUpRight className={ARROW} />
         </Link>
-        {add if target else None}
+        {button if target else None}
     </li>;
 }
 
@@ -111,7 +113,6 @@ def:pub SearchCommand -> JsxElement {
     has target: dict[str, str] = {};
     has adding: str = "";
     has timer: Ref[any] = Ref(None);
-    has on_event: Ref[any] = Ref(None);
 
     query = term.strip();
     stocks = found if query else popular[:10];
@@ -122,27 +123,23 @@ def:pub SearchCommand -> JsxElement {
         term = "";
     }
 
-    async can with entry {
-        on_event.current = lambda (e: any) {
-            if e.type == "open-search" {
-                # Read once, then clear: a later plain open must not keep adding to the old list
-                target = requested_list;
-                requested_list = {};
-                open = True;
-            } elif (e.metaKey or e.ctrlKey) and str(e.key).lower() == "k" {
-                e.preventDefault();
-                target = {};
-                open = not open;
-            }
-        };
-        window.addEventListener("keydown", on_event.current);
-        window.addEventListener("open-search", on_event.current);
-        popular = await search_stocks("");
+    def heard(e: any) {
+        if e.type == "open-search" {
+            # Read once, then clear: a later plain open must not keep adding to the old list
+            target = requested_list;
+            requested_list = {};
+            open = True;
+        } elif (e.metaKey or e.ctrlKey) and str(e.key).lower() == "k" {
+            e.preventDefault();
+            target = {};
+            open = not open;
+        }
     }
 
-    can with exit {
-        window.removeEventListener("keydown", on_event.current);
-        window.removeEventListener("open-search", on_event.current);
+    listen(window, ["keydown", "open-search"], heard);
+
+    async can with entry {
+        popular = await search_stocks("");
     }
 
     async def run(text: str) {
@@ -193,60 +190,34 @@ def:pub SearchCommand -> JsxElement {
     }
 
     bold = lambda (chunk: str) -> any { <span key="name" className="font-semibold">{chunk}</span> };
-    heading = rich("SearchCommand.addingTo", {"name": bold}, {"list": target["name"]})
+    named: dict[str, any] = {"list": target.get("name", "")};
+    heading = rich("SearchCommand.addingTo", {"name": bold}, named)
         if target
         else t("SearchCommand.results" if query else "SearchCommand.popular");
-    prompt = t("SearchCommand.listPlaceholder", {"list": target["name"]})
+    prompt = t("SearchCommand.listPlaceholder", named)
         if target
         else t("SearchCommand.placeholder");
-    return <Dialog
-        {open}
-        onClose={close}
-        label={t("SearchCommand.dialogTitle")}
-        className="search-dialog sm:max-w-lg"
-    >
+    none = t("SearchCommand.noMatch", {"query": query}) if query else t("SearchCommand.noStocks");
+    typed = lambda (e: any) { term = e.target.value; };
+    field = "search-input w-full bg-transparent outline-hidden";
+    rows = [
+        <Result key={s.symbol} stock={s} {target} {adding} onPick={picked} onAdd={add} />
+        for s in stocks
+    ];
+    head = <li className="search-count">{heading}<span className="num"> · {len(stocks)}</span></li>;
+    listed = <ul>{head}{rows}</ul>
+        if stocks
+        else <div className="search-list-indicator">{none}</div>;
+    busy = <p className="search-list-empty text-sm">{t("SearchCommand.searching")}</p>;
+    shown = busy if loading else listed;
+    label = t("SearchCommand.dialogTitle");
+    return <Dialog {open} onClose={close} {label} className="search-dialog sm:max-w-lg">
         <div className="search-field flex items-center gap-2 px-3">
             <Search className="size-5 shrink-0 opacity-50" />
-            <input
-                autoFocus
-                value={term}
-                onInput={lambda (e: any) { term = e.target.value; }}
-                placeholder={prompt}
-                className="search-input w-full bg-transparent outline-hidden"
-            />
+            <input autoFocus value={term} onInput={typed} placeholder={prompt} className={field} />
             {<Loader2 className="search-loader" /> if loading else None}
         </div>
-        <div className="search-list overflow-x-hidden overflow-y-auto">
-            {
-                if loading {
-                    <p className="search-list-empty text-sm">{t("SearchCommand.searching")}</p>
-                } elif not stocks {
-                    <div className="search-list-indicator">
-                        {t("SearchCommand.noMatch", {"query": query})
-                            if query
-                            else t("SearchCommand.noStocks")}
-                    </div>
-                } else {
-                    <ul>
-                        <li className="search-count">
-                            {heading}
-                            <span className="num"> · {len(stocks)}</span>
-                        </li>
-                        {[
-                            <Result
-                                key={s.symbol}
-                                stock={s}
-                                {target}
-                                {adding}
-                                onPick={picked}
-                                onAdd={add}
-                            />
-                            for s in stocks
-                        ]}
-                    </ul>
-                }
-            }
-        </div>
+        <div className="search-list overflow-x-hidden overflow-y-auto">{shown}</div>
     </Dialog>;
 }
 
@@ -258,42 +229,31 @@ def:pub LanguageSwitcher -> JsxElement {
         <span className="flex-1">{t("Language.label")}</span>
         <span className="text-xs text-faint" lang={loc}>{LOCALE_NAMES[loc]}</span>
     </>;
-    return <Menu
-        up
-        className="side-item h-8 w-full text-start outline-none"
-        panelClassName="w-full"
-        {trigger}
-    >
-        {[
-            <MenuItem
-                key={code}
-                radio
-                checked={code == loc}
-                lang={code}
-                onSelect={lambda { set_locale(code); }}
-            >{LOCALE_NAMES[code]}</MenuItem>
-            for code in LOCALES
-        ]}
-    </Menu>;
+    names = [
+        <MenuItem key={c} radio checked={c == loc} lang={c} onSelect={lambda { set_locale(c); }}>
+            {LOCALE_NAMES[c]}
+        </MenuItem>
+        for c in LOCALES
+    ];
+    look = "side-item h-8 w-full text-start outline-none";
+    return <Menu up className={look} panelClassName="w-full" {trigger}>{names}</Menu>;
 }
 
 # Asks for sponsors 3 seconds into a visit, at most once a day; the sidebar's Support button opens it too
 def:pub DonatePopup -> JsxElement {
     has open: bool = False;
     has timer: Ref[any] = Ref(None);
-    has on_open: Ref[any] = Ref(None);
+
+    listen(window, ["open-donate-popup"], lambda { open = True; });
 
     can with entry {
-        on_open.current = lambda { open = True; };
-        window.addEventListener("open-donate-popup", on_open.current);
         if Date.now() - int(__getLocalStorage(DISMISSED) or "0") >= DONATE_COOLDOWN_MS {
-            timer.current = setTimeout(on_open.current, 3000);
+            timer.current = setTimeout(lambda { open = True; }, 3000);
         }
     }
 
     can with exit {
         clearTimeout(timer.current);
-        window.removeEventListener("open-donate-popup", on_open.current);
     }
 
     def dismiss {
@@ -301,6 +261,9 @@ def:pub DonatePopup -> JsxElement {
         __setLocalStorage(DISMISSED, str(Date.now()));
     }
 
+    title = "mt-1.5 text-2xl font-bold leading-none tracking-[-0.03em]";
+    become = <><Heart className="fill-current" /> {t("DonatePopup.becomeSponsor")}</>;
+    about = t("DonatePopup.description");
     return <Dialog {open} onClose={dismiss} className="grid gap-5 p-6 sm:max-w-[440px]">
         <div className="flex flex-col gap-3 text-start">
             <span className="bento-ico size-11 bg-brand-soft text-brand-ink">
@@ -308,18 +271,14 @@ def:pub DonatePopup -> JsxElement {
             </span>
             <div>
                 <Live>{t("DonatePopup.kicker")}</Live>
-                <h2 className="mt-1.5 text-2xl font-bold leading-none tracking-[-0.03em]">
-                    {t("DonatePopup.title")}
-                </h2>
+                <h2 className={title}>{t("DonatePopup.title")}</h2>
             </div>
-            <p className="text-[15px] leading-relaxed text-muted-foreground">
-                {t("DonatePopup.description")}
-            </p>
+            <p className="text-[15px] leading-relaxed text-muted-foreground">{about}</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-            <Link to="/sponsor" onClick={dismiss} className="btn btn-primary h-11 flex-1"><Heart
-                className="fill-current"
-            /> {t("DonatePopup.becomeSponsor")}</Link>
+            <Link to="/sponsor" onClick={dismiss} className="btn btn-primary h-11 flex-1">
+                {become}
+            </Link>
             <button type="button" onClick={dismiss} className="btn btn-ghost h-11 flex-1">
                 {t("DonatePopup.maybeLater")}
             </button>
@@ -327,58 +286,62 @@ def:pub DonatePopup -> JsxElement {
     </Dialog>;
 }
 
+# One market chip: a dot says whether it is trading now
+def Chip(id: str, active: bool, trading: bool, onPick: Callable[[str], None]) -> JsxElement {
+    dot = cx("size-1.5 rounded-full", "bg-up" if trading else "bg-line-strong");
+    state = t("MarketSwitcher.openNow" if trading else "MarketSwitcher.closedNow");
+    pick = lambda { onPick(id); };
+    look = cx(CHIP, CHIP_ON if active else CHIP_OFF);
+    current = "page" if active else None;
+    return <button type="button" onClick={pick} aria-current={current} className={look}>
+        <span className={dot} title={state} />
+        {t(f"Markets.names.{id}")}
+    </button>;
+}
+
 # Market chips for the dashboard: `markets` are ids (named by Markets.names.<id>), `openIds` the ones trading now
 def:pub MarketSwitcher(
     markets: list[str], active: str, openIds: list[str], onPick: Callable[[str], None]
 ) -> JsxElement {
-    return <nav
-        aria-label={t("MarketSwitcher.label")}
-        className="flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]"
-    >
-        {[
-            <button
-                key={id}
-                type="button"
-                onClick={lambda { onPick(id); }}
-                aria-current={"page" if id == active else None}
-                className={cx(CHIP, CHIP_ON if id == active else CHIP_OFF)}
-            >
-                <span
-                    className={cx("size-1.5 rounded-full", "bg-up" if id in openIds else "bg-line-strong")}
-                    title={t("MarketSwitcher.openNow" if id in openIds else "MarketSwitcher.closedNow")}
-                />
-                {t(f"Markets.names.{id}")}
-            </button>
-            for id in markets
-        ]}
-    </nav>;
+    chips = [
+        <Chip key={id} {id} active={id == active} trading={id in openIds} {onPick} />
+        for id in markets
+    ];
+    look = "flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]";
+    return <nav aria-label={t("MarketSwitcher.label")} className={look}>{chips}</nav>;
 }
 
-# The stocks on the watchlist, each a link to its page
+# One stock on the watchlist, a link to its page
+def Watched(w: dict[str, str], path: str) -> JsxElement {
+    to = f"/stocks/{w['symbol']}";
+    company = <span dir="auto" className="truncate text-[12.5px] text-faint">{w["company"]}</span>;
+    look = cx("side-item h-8 font-medium", path == to and "is-active");
+    return <li>
+        <Link {to} title={w["company"]} className={look}>
+            <span className={WATCHED}>{w["symbol"]}</span>
+            {company if w["company"] != w["symbol"] else None}
+        </Link>
+    </li>;
+}
+
+# The stocks on the watchlist
 def Watching(watchlist: list[dict[str, str]], path: str) -> JsxElement {
     if not watchlist {
         return <p className="px-2.5 text-[12.5px] text-faint">{t("Sidebar.watchingEmpty")}</p>;
     }
     return <ul className="scrollbar-hide-default flex min-h-0 flex-col gap-0.5 overflow-y-auto">
-        {
-            for w in watchlist {
-                to = f"/stocks/{w['symbol']}";
-                company = <span dir="auto" className="truncate text-[12.5px] text-faint">
-                    {w["company"]}
-                </span>;
-                <li key={w["symbol"]}>
-                    <Link
-                        {to}
-                        title={w["company"]}
-                        className={cx("side-item h-8 font-medium", path == to and "is-active")}
-                    >
-                        <span className={WATCHED}>{w["symbol"]}</span>
-                        {company if w["company"] != w["symbol"] else None}
-                    </Link>
-                </li>
-            }
-        }
+        {[<Watched key={w["symbol"]} {w} {path} /> for w in watchlist]}
     </ul>;
+}
+
+# One sponsor in the sidebar
+def Partner(s: any) -> JsxElement {
+    look = cx("flex h-11 items-center gap-2.5 px-3", BOXED);
+    name = "truncate text-[13px] font-semibold text-muted-foreground";
+    return <SponsorLink sponsor={s} title={s.name} className={look}>
+        <SponsorMark sponsor={s} logoClassName="h-5 w-auto max-w-[120px]" nameClassName={name} />
+        <span className="kicker ms-auto">{t("Sidebar.sponsor")}</span>
+    </SponsorLink>;
 }
 
 # The sidebar's sponsors, then an invite while slots are free
@@ -388,40 +351,54 @@ def SidebarSponsors -> JsxElement {
     slots = t("Sidebar.sponsorSlotsOpen")
         if free == SIDEBAR_SPONSOR_SLOTS
         else t("Sidebar.sponsorSlotsLeft", {"count": free});
-    pitch = "text-[12.5px] text-faint transition-colors group-hover:text-muted-foreground";
+    look = cx("group flex flex-col gap-0.5 px-3 py-2.5", BOXED);
+    dot = <><span className="live-dot" /> {slots}</>;
+    invite = <Link to="/sponsor#tiers" className={look}>
+        <span className="kicker flex items-center gap-1.5 text-brand-ink">{dot}</span>
+        <span className={PITCH}>{t("Sidebar.sponsorPitch")}</span>
+    </Link>;
     return <div className="flex flex-col gap-1.5">
-        {[
-            <SponsorLink
-                key={s.name}
-                sponsor={s}
-                title={s.name}
-                className={cx("flex h-11 items-center gap-2.5 px-3", BOXED)}
-            >
-                <SponsorMark
-                    sponsor={s}
-                    logoClassName="h-5 w-auto max-w-[120px]"
-                    nameClassName="truncate text-[13px] font-semibold text-muted-foreground"
-                />
-                <span className="kicker ms-auto">{t("Sidebar.sponsor")}</span>
-            </SponsorLink>
-            for s in partners
-        ]}
-        {<Link to="/sponsor#tiers" className={cx("group flex flex-col gap-0.5 px-3 py-2.5", BOXED)}>
-            <span className="kicker flex items-center gap-1.5 text-brand-ink"><span
-                className="live-dot"
-            /> {slots}</span>
-            <span className={pitch}>{t("Sidebar.sponsorPitch")}</span>
-        </Link>
-            if free > 0
-            else None}
+        {[<Partner key={s.name} {s} /> for s in partners]}
+        {invite if free > 0 else None}
     </div>;
 }
 
-def Sidebar(user: dict[str, str], watchlist: list[dict[str, str]], path: str) -> JsxElement {
+# Who is signed in, a link to their profile, and the way out
+def Me(user: dict[str, str], path: str) -> JsxElement {
     name = user.get("name", "");
-    at = lambda (to: str) -> str { cx("side-item", path == to and "is-active") };
+    out = t("Sidebar.signOut");
+    mail = "block truncate text-[12px] text-faint rtl:text-right";
+    return <div className="flex items-center gap-2.5 border-t border-line px-1 pt-3">
+        <Link to="/profile" className={cx(ME, path == "/profile" and "bg-white/5")}>
+            <span className={INITIAL}>{name[:1].upper() or "?"}</span>
+            <span className="min-w-0 flex-1">
+                <span dir="auto" className={NAMED}>{name}</span>
+                <span dir="auto" className={mail}>{user.get("email", "")}</span>
+            </span>
+        </Link>
+        <button type="button" onClick={leave} className="icon-btn" title={out} aria-label={out}>
+            <LogOut />
+        </button>
+    </div>;
+}
+
+def SideLink(to: str, icon: any, label: str, path: str, className: str = "") -> JsxElement {
+    return <Link {to} className={cx("side-item", path == to and "is-active", className)}><@icon
+    /> {label}</Link>;
+}
+
+def Sidebar(user: dict[str, str], watchlist: list[dict[str, str]], path: str) -> JsxElement {
     count = <span className="num text-xs text-faint">{len(watchlist)}</span>;
-    named = "block truncate text-[13px] font-semibold text-foreground rtl:text-right";
+    watching = cx("side-item", path == "/watchlist" and "is-active");
+    starred = <span className="flex-1">{t("Sidebar.watchlist")}</span>;
+    resources = [
+        <SideLink key={r[0]} to={r[0]} icon={r[2]} label={t(r[1])} {path} className="h-8" />
+        for r in RESOURCES
+    ];
+    heart = <><Heart /> {t("Sidebar.support")}</>;
+    support = <button type="button" onClick={open_donate} className="side-item h-8 text-start">
+        {heart}
+    </button>;
     return <aside className="sidebar">
         <Link to="/dashboard" className="px-2 pt-1 pb-2" aria-label={t("Sidebar.homeAria")}>
             <Logo width={150} height={38} />
@@ -432,48 +409,20 @@ def Sidebar(user: dict[str, str], watchlist: list[dict[str, str]], path: str) ->
             <kbd className="kbd bg-on-brand/10">⌘K</kbd>
         </button>
         <nav className="flex flex-col gap-0.5">
-            <Link to="/dashboard" className={at("/dashboard")}><LayoutDashboard /> {t(
-                "Sidebar.overview"
-            )}</Link>
-            <Link to="/watchlist" className={at("/watchlist")}><Star /> <span className="flex-1">
-                {t("Sidebar.watchlist")}
-            </span>{count}</Link>
+            <SideLink to="/dashboard" icon={LayoutDashboard} label={t("Sidebar.overview")} {path} />
+            <Link to="/watchlist" className={watching}><Star /> {starred}{count}</Link>
         </nav>
         <div className="flex min-h-0 flex-col gap-1">
             <p className="side-label shrink-0">{t("Sidebar.watching")}</p>
             <Watching {watchlist} {path} />
         </div>
         <div className="mt-auto flex flex-col gap-0.5">
-            {[
-                <Link key={r[0]} to={r[0]} className={cx(at(r[0]), "h-8")}><@{r[2]} /> {t(
-                    f"Sidebar.resources.{r[1]}"
-                )}</Link>
-                for r in RESOURCES
-            ]}
-            <button type="button" onClick={open_donate} className="side-item h-8 text-start"><Heart
-            /> {t("Sidebar.support")}</button>
+            {resources}
+            {support}
             <LanguageSwitcher />
         </div>
         <SidebarSponsors />
-        <div className="flex items-center gap-2.5 border-t border-line px-1 pt-3">
-            <Link to="/profile" className={cx(ME, path == "/profile" and "bg-white/5")}>
-                <span className={INITIAL}>{name[:1].upper() or "?"}</span>
-                <span className="min-w-0 flex-1">
-                    <span dir="auto" className={named}>{name}</span>
-                    <span
-                        dir="auto"
-                        className="block truncate text-[12px] text-faint rtl:text-right"
-                    >{user.get("email", "")}</span>
-                </span>
-            </Link>
-            <button
-                type="button"
-                onClick={leave}
-                className="icon-btn"
-                title={t("Sidebar.signOut")}
-                aria-label={t("Sidebar.signOut")}
-            ><LogOut /></button>
-        </div>
+        <Me {user} {path} />
     </aside>;
 }
 
@@ -507,24 +456,19 @@ def saved_tabs(path: str) -> list[str] {
 }
 
 def Tab(tab: str, active: bool, onClose: Callable[[str], None]) -> JsxElement {
-    icon = {"/dashboard": <LayoutDashboard />, "/watchlist": <Star />}.get(tab);
+    icon = <@{PAGE_ICONS[tab]} /> if tab in PAGE_ICONS else None;
     label = tab_label(tab);
-    close = <button
-        type="button"
-        aria-label={t("TabBar.closeTab", {"label": label})}
-        className="tab-close relative z-10"
-        onClick={lambda { onClose(tab); }}
-    ><X /></button>;
-    return <div
-        data-active={"" if active else None}
-        className={cx("tab", active and "is-active", tab in PINNED and "pe-4")}
-    >
+    shut = lambda { onClose(tab); };
+    named = t("TabBar.closeTab", {"label": label});
+    x = "tab-close relative z-10";
+    close = <button type="button" aria-label={named} className={x} onClick={shut}><X /></button>;
+    look = cx("tab", active and "is-active", tab in PINNED and "pe-4");
+    text = cx("tab-label", tab.startswith("/stocks/") and "mono text-[13px]");
+    return <div data-active={"" if active else None} className={look}>
         {#* Stretched link: the whole tab navigates, while the close button stays a real, focusable button *#}
         <Link to={tab} aria-current={"page" if active else None} className={STRETCHED}>
             {icon}
-            <span className={cx("tab-label", tab.startswith("/stocks/") and "mono text-[13px]")}>
-                {label}
-            </span>
+            <span className={text}>{label}</span>
         </Link>
         {close if tab not in PINNED else None}
     </div>;
@@ -558,32 +502,28 @@ def TabBar(path: str, onMenu: Callable[[], None]) -> JsxElement {
     }
 
     place = {"transform": f"translateX({glider[0]}px)", "width": glider[1]} if glider else None;
+    curve = lambda (side: str) -> any {
+        <svg className={side} viewBox="0 0 12 12"><path d={CURVE} /></svg>
+    };
+    menu = t("TabBar.openMenu");
+    more = t("TabBar.openStock");
+    hint = t("TabBar.openStockHint");
+    plus = "chrome-btn -ms-2";
     return <div className="tabbar">
-        <button
-            type="button"
-            onClick={lambda { onMenu(); }}
-            className="chrome-btn lg:hidden"
-            aria-label={t("TabBar.openMenu")}
-        ><MenuIcon /></button>
+        <button type="button" onClick={onMenu} className="chrome-btn lg:hidden" aria-label={menu}>
+            <MenuIcon />
+        </button>
         <div ref={strip} className="tabs ps-3 pe-3">
             <div className={cx("tab-glider", glider and "is-ready")} style={place} aria-hidden>
-                <svg className="tab-glider-curve is-left" viewBox="0 0 12 12">
-                    <path d={CURVE} />
-                </svg>
+                {curve("tab-glider-curve is-left")}
                 <div className="tab-glider-body" />
-                <svg className="tab-glider-curve is-right" viewBox="0 0 12 12">
-                    <path d={CURVE} />
-                </svg>
+                {curve("tab-glider-curve is-right")}
             </div>
             {[<Tab key={tab} {tab} active={tab == path} onClose={close_tab} /> for tab in tabs]}
         </div>
-        <button
-            type="button"
-            onClick={open_search}
-            className="chrome-btn -ms-2"
-            aria-label={t("TabBar.openStock")}
-            title={t("TabBar.openStockHint")}
-        ><Plus /></button>
+        <button type="button" onClick={open_search} className={plus} aria-label={more} title={hint}>
+            <Plus />
+        </button>
     </div>;
 }
 
@@ -603,20 +543,17 @@ def:pub AppShell(
         workspace.current.scrollTo({"top": 0});
     }
 
-    shade = "fixed inset-0 z-40 bg-page/60 backdrop-blur-[2px] lg:hidden";
+    # The drawer slides in from the reading side: the right in Arabic
+    drawer = cx(DRAWER, "max-lg:translate-x-0" if nav_open else DRAWER_SHUT);
+    shade = <div className={SHADE} onClick={lambda { nav_open = False; }} />;
+    work = cx("workspace", path == "/dashboard" and "is-first-tab");
     return <div className="shell">
-        {#* The drawer slides in from the reading side: the right in Arabic *#}
-        <div className={cx(DRAWER, "max-lg:translate-x-0" if nav_open else DRAWER_SHUT)}>
-            <Sidebar {user} {watchlist} {path} />
-        </div>
-        {<div className={shade} onClick={lambda { nav_open = False; }} /> if nav_open else None}
+        <div className={drawer}><Sidebar {user} {watchlist} {path} /></div>
+        {shade if nav_open else None}
         <div className="shell-container">
             <div className="app">
                 <TabBar {path} onMenu={lambda { nav_open = True; }} />
-                <main
-                    ref={workspace}
-                    className={cx("workspace", path == "/dashboard" and "is-first-tab")}
-                >
+                <main ref={workspace} className={work}>
                     <div className="workspace-inner"><UpdateBanner loc={locale()} />{children}</div>
                 </main>
             </div>
@@ -628,41 +565,28 @@ def:pub AppShell(
 
 # The sign-in pages' frame: the form on one side, the founder's words over a product preview on the other
 def:pub AuthLayout(children: any) -> JsxElement {
-    star = t("AuthLayout.starAlt");
+    (src, alt) = ("/assets/icons/star.svg", t("AuthLayout.starAlt"));
+    stars = [
+        <img key={i} {src} {alt} width={20} height={20} className="h-4 w-4" />
+        for i in range(5)
+    ];
+    founder = <cite
+        className="auth-testimonial-author"
+    >- Ravi Pratap Singh (@ravixalgorithm)</cite>;
+    logo = <Logo width={140} height={35} />;
+    quote = t("AuthLayout.testimonialQuote");
+    role = t("AuthLayout.founderRole", {"org": "@opendevsociety"});
     return <main className="auth-layout">
         <section className="auth-left-section scrollbar-hide-default">
-            <Link to="/" className="auth-logo flex items-center gap-2">
-                <Logo width={140} height={35} />
-            </Link>
+            <Link to="/" className="auth-logo flex items-center gap-2">{logo}</Link>
             <div className="flex-1 pb-6 lg:pb-8">{children}</div>
         </section>
         <section className="auth-right-section">
             <div className="relative z-10 lg:mt-4 lg:mb-16">
-                <blockquote className="auth-blockquote">
-                    {t("AuthLayout.testimonialQuote")}
-                </blockquote>
+                <blockquote className="auth-blockquote">{quote}</blockquote>
                 <div className="flex items-center justify-between">
-                    <div>
-                        <cite
-                            className="auth-testimonial-author"
-                        >- Ravi Pratap Singh (@ravixalgorithm)</cite>
-                        <p className="text-gray-500 max-md:text-xs">
-                            {t("AuthLayout.founderRole", {"org": "@opendevsociety"})}
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-0.5">
-                        {[
-                            <img
-                                key={i}
-                                src="/assets/icons/star.svg"
-                                alt={star}
-                                width={20}
-                                height={20}
-                                className="h-4 w-4"
-                            />
-                            for i in range(5)
-                        ]}
-                    </div>
+                    <div>{founder}<p className="text-gray-500 max-md:text-xs">{role}</p></div>
+                    <div className="flex items-center gap-0.5">{stars}</div>
                 </div>
             </div>
             <div className="relative flex-1" aria-hidden>
