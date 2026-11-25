@@ -207,18 +207,8 @@ def:protect delete_list(list_id: str) -> Saved {
 }
 
 def info(a: Alert) -> AlertInfo {
-    return AlertInfo(
-        jid(a),
-        a.symbol,
-        a.condition,
-        a.target_price,
-        a.target,
-        a.sma_period,
-        a.active,
-        a.triggered,
-        a.expires_at,
-        a.created_at,
-    );
+    what = (a.symbol, a.condition, a.target_price, a.target, a.sma_period);
+    return AlertInfo(jid(a), *what, a.active, a.triggered, a.expires_at, a.created_at);
 }
 
 """The caller's alerts, newest first."""
@@ -238,22 +228,18 @@ def:protect delete_alert(alert_id: str) {
 """Why an alert can't be made, "" when it can. Only validated fields are stored, and the 90 days and `triggered` are
 never the caller's to set."""
 def alert_error(symbol: str, condition: str, price: float, is_sma: bool, period: int) -> str {
-    return "alertsOff"
-        if not is_realtime()
-        else "symbolInvalid"
-            if not re.fullmatch(ALERT_SYMBOL, symbol)
-            else "conditionInvalid"
-                if condition not in ["ABOVE", "BELOW"]
-                else "marketUnsupported"
-                    if not has_finnhub_quotes(symbol)
-                    else "priceInvalid"  # The alert checker prices symbols through Finnhub, whose free plan covers US stocks and crypto
-                        if not is_sma and not 0 < price < float("inf")
-                        else "periodInvalid"
-                            if is_sma and not is_sma_period(period)
-                            else "alertLimit"
-                                if len([a for a in [root --> [?:Alert]] if a.active])
-                                    >= MAX_ACTIVE_ALERTS
-                                else "";
+    active = len([a for a in [root --> [?:Alert]] if a.active]);
+    refusals = [
+        (not is_realtime(), "alertsOff"),
+        (not re.fullmatch(ALERT_SYMBOL, symbol), "symbolInvalid"),
+        (condition not in ["ABOVE", "BELOW"], "conditionInvalid"),
+        # The alert checker prices symbols through Finnhub, whose free plan covers US stocks and crypto
+        (not has_finnhub_quotes(symbol), "marketUnsupported"),
+        (not is_sma and not 0 < price < float("inf"), "priceInvalid"),
+        (is_sma and not is_sma_period(period), "periodInvalid"),
+        (active >= MAX_ACTIVE_ALERTS, "alertLimit"),
+    ];
+    return ([code for (refused, code) in refusals if refused] + [""])[0];
 }
 
 """A fixed-price alert, or with target "SMA" a cross of the sma_period-day moving average (target_price is then
