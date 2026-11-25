@@ -26,26 +26,9 @@ def area(path: str) -> str {
     return "app" if first in APP else ("auth" if first in AUTH else "site");
 }
 
-# The palette's rows: the popular stocks for ""
-async def find_stocks(query: str) -> list[dict[str, any]] {
-    return [
-        {"symbol": s.symbol, "name": s.name, "exchange": s.exchange, "type": s.kind}
-        for s in await search_stocks(query)
-    ];
-}
-
 # The sidebar's stocks. Whatever changes the watchlist dispatches the window event "watchlistchange".
 async def starred -> list[dict[str, str]] {
     return [{"symbol": w.symbol, "company": w.company} for w in await get_watchlist()];
-}
-
-# The palette in "add to this list" mode: "" or what went wrong
-async def file_into(list_id: str, symbol: str, name: str) -> str {
-    refused = problem((await add_to_list(list_id, symbol, name)).error);
-    if refused == "" {
-        changed();
-    }
-    return refused;
 }
 
 def:pub layout -> JsxLayout {
@@ -102,9 +85,7 @@ def:pub layout -> JsxLayout {
     if kind == "auth" {
         return <AuthLayout><Outlet /></AuthLayout>;
     }
-    return <AppShell
-        user={who}
-        {watchlist}
-        palette={<SearchCommand search={find_stocks} addToList={file_into} />}
-    >{<Outlet /> if who else <Loading />}</AppShell>;
+    return <AppShell user={who} {watchlist} palette={<SearchCommand />}>
+        {<Outlet /> if who else <Loading />}
+    </AppShell>;
 }
