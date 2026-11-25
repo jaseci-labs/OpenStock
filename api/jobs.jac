@@ -53,7 +53,7 @@ def claim(job: str, hour: int, weekday: int = -1, tries: int = 1) -> Ran | None 
 
 """The welcome email, as it is sent beside the sign-up: an intro the AI writes from the profile (the stock one when
 every provider fails), in the language picked at sign-up, and a place on the Kit list the weekly letter goes to.
-False when the email was skipped for want of SMTP settings."""
+False when the email was skipped for want of SMTP settings, or failed (which is logged)."""
 def welcome(
     email: str, name: str, country: str, goals: str, risk: str, industry: str, locale: str
 ) -> bool {
@@ -72,16 +72,11 @@ def welcome(
     } except Exception as e {
         log(f"Kit subscription failed for {email}: {e}");
     }
-    return mail_welcome(email, name, intro, locale);
-}
-
-def welcome_quietly(
-    email: str, name: str, country: str, goals: str, risk: str, industry: str, locale: str
-) {
     try {
-        welcome(email, name, country, goals, risk, industry, locale);
+        return mail_welcome(email, name, intro, locale);
     } except Exception as e {
         log(f"Error sending welcome email to {email}: {e}");
+        return False;
     }
 }
 
@@ -90,7 +85,7 @@ fails it."""
 def send_welcome(
     email: str, name: str, country: str, goals: str, risk: str, industry: str, locale: str
 ) {
-    flow welcome_quietly(email, name, country, goals, risk, industry, locale);
+    flow welcome(email, name, country, goals, risk, industry, locale);
 }
 
 """Summarise the latest market news with the AI and send it to the whole Kit list. Also callable with the

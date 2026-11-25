@@ -12,30 +12,14 @@ node Profile {
         locale: str = "en";  # the language emails to this caller go out in
 }
 
-# The welcome email goes out beside the call (send_welcome returns at once), in the language picked at sign-up
-def on_signed_up(profile: Profile) {
-    send_welcome(
-        profile.email,
-        profile.name,
-        profile.country,
-        profile.investment_goals,
-        profile.risk_tolerance,
-        profile.preferred_industry,
-        profile.locale,
-    );
-}
-
 def my_profile -> Profile | None {
     found = [root --> [?:Profile]];
     return found[0] if found else None;
 }
 
 def write(profile: Profile, name: str, country: str, goal: str, risk: str, industry: str) {
-    profile.name = name.strip();
-    profile.country = country;
-    profile.investment_goals = goal;
-    profile.risk_tolerance = risk;
-    profile.preferred_industry = industry;
+    (profile.name, profile.country, profile.investment_goals) = (name.strip(), country, goal);
+    (profile.risk_tolerance, profile.preferred_industry) = (risk, industry);
 }
 
 # Called once by the sign-up form, after the plugin made the account. Returns the Errors.<key>
@@ -56,7 +40,9 @@ def:protect save_profile(
     }
     profile = root ++> Profile(email=email.strip().lower(), locale=locale);
     write(profile, name, country, investment_goals, risk_tolerance, preferred_industry);
-    on_signed_up(profile);
+    # The welcome email goes out beside the call (send_welcome returns at once), in the language picked at sign-up
+    (to, who) = (profile.email, profile.name);
+    send_welcome(to, who, country, investment_goals, risk_tolerance, preferred_industry, locale);
     return "";
 }
 
@@ -81,14 +67,8 @@ def:protect update_profile(
 ) -> str {
     problem = profile_problem(name, country, investment_goals, risk_tolerance, preferred_industry);
     if problem == "" {
-        write(
-            my_profile() or (root ++> Profile()),
-            name,
-            country,
-            investment_goals,
-            risk_tolerance,
-            preferred_industry,
-        );
+        profile = my_profile() or (root ++> Profile());
+        write(profile, name, country, investment_goals, risk_tolerance, preferred_industry);
     }
     return problem;
 }
