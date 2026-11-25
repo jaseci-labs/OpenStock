@@ -141,6 +141,7 @@ graph import {
     content.sponsors ++> ui.site {
         Sponsor,
         Perk,
+        Tier,
         SPONSOR_TIERS,
         ACTIVE_SPONSORS,
         TIER_COLOR,
