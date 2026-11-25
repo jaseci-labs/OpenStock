@@ -31,7 +31,15 @@ glob ROBOTS_ALLOW: list[str] = ["/", "/s", "/s/", "/compare", "/compare/"],
 
 # Sorted by symbol. Regenerated with tools/build_tickers.jac.
 glob TICKERS: list[Ticker] = load_tickers(),
-     BY_SYMBOL: dict[str, Ticker] = {t.symbol: t for t in TICKERS};
+     BY_SYMBOL: dict[str, Ticker] = {t.symbol: t for t in TICKERS},
+     BY_SECTOR: dict[str, list[Ticker]] = {
+         s: [t for t in TICKERS if t.sector == s]
+         for s in sorted({t.sector for t in TICKERS})
+     };
+
+# sitemap.xml by origin: it is the same text until BETTER_AUTH_URL changes, and building it is the
+# costliest thing a crawler asks for.
+glob sitemaps: dict[str, str] = {};
 
 # EDGAR answers are kept 12 hours and failures 10 minutes, by CIK: (expires, company).
 glob edgar_lock: threading.Lock = threading.Lock(),
@@ -62,7 +70,7 @@ def:pub tickers -> list[Ticker] {
 
 """Every ticker under its sector, sectors and symbols both in order."""
 def:pub tickers_by_sector -> dict[str, list[Ticker]] {
-    return {s: [t for t in TICKERS if t.sector == s] for s in sorted({t.sector for t in TICKERS})};
+    return BY_SECTOR;
 }
 
 """The ticker a URL segment names, in any case, percent-encoded or not, BRK.B or BRK-B."""
@@ -249,9 +257,17 @@ def sitemap_entries(origin: str) -> list[tuple[str, str, float]] {
 
 @restspec(method=HTTPMethod.GET, path="/sitemap.xml", produces="application/xml", envelope=False)
 def:pub sitemap -> str {
+    origin = site_url();
+    if origin not in sitemaps {
+        sitemaps[origin] = sitemap_xml(origin);
+    }
+    return sitemaps[origin];
+}
+
+def sitemap_xml(origin: str) -> str {
     urls = [
         f"<url><loc>{url}</loc><changefreq>{freq}</changefreq><priority>{priority:g}</priority></url>"
-        for (url, freq, priority) in sitemap_entries(site_url())
+        for (url, freq, priority) in sitemap_entries(origin)
     ];
     head = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
     return head + "\n".join(urls) + "\n</urlset>\n";
