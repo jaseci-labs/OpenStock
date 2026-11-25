@@ -273,7 +273,6 @@ graph import {
         create_list,
     }
     ui.i18n ++> ui.stocks { t, locale }
-    ui.market ++> ui.tv { tv_locale }
     ui.kit ++> ui.stocks { cx, Dialog, toast_error, toast_ok }
     ui.i18n ++> "pages/sign-up" { locale }
     api.quotes ++> ui.shell { search_stocks }
@@ -303,9 +302,8 @@ graph import {
     ui.forms ++> pages.profile { Field, SubmitButton, ChoiceChips, CountrySelect }
     ui.shell ++> pages.dashboard { MarketSwitcher }
     ui.shell ++> pages.watchlist { open_search, open_search_for_list }
-    ui.market ++> pages.dashboard { TradingView, IndexPulse }
-    ui.market ++> pages.stocks { TradingView, symbol_info, candle_chart }
-    ui.tv ++> pages.dashboard | pages.stocks { widget_config }
+    ui.market ++> pages.dashboard { TradingView, IndexPulse, widget_config }
+    ui.market ++> pages.stocks { TradingView, symbol_info, candle_chart, widget_config }
     ui.stocks ++> pages.watchlist {
         use_live,
         Empty,
