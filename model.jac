@@ -157,9 +157,8 @@ def tradingview_symbol(symbol: str) -> str {
         ticker = str(int(ticker));
     }
     if exchange in TICKER_SEPARATOR {
-        ticker = ticker.replace("-", TICKER_SEPARATOR[exchange]).replace(
-            "&", TICKER_SEPARATOR[exchange]
-        );
+        sep = TICKER_SEPARATOR[exchange];
+        ticker = ticker.replace("-", sep).replace("&", sep);
     }
     return f"{exchange}:{ticker}";
 }
@@ -210,10 +209,7 @@ obj YahooExchange {
 glob YAHOO_EXCHANGES: dict[str, YahooExchange] = {
     "TADAWUL": YahooExchange("SR", "SAR", True, {"TASI": "^TASI.SR"}),
     "GPW": YahooExchange(
-        "WA",
-        "PLN",
-        False,
-        {"WIG20": "WIG20.WA", "WIG": "WIG.WA", "MWIG40": "MWIG40.WA", "SWIG80": "SWIG80.WA"},
+        "WA", "PLN", False, table("WIG20=WIG20.WA WIG=WIG.WA MWIG40=MWIG40.WA SWIG80=SWIG80.WA")
     ),
 };
 
@@ -278,22 +274,16 @@ def format_span(total: int) -> str {
 
 """The NYSE session at a New York weekday (0 = Sunday) and minute of the day."""
 def session_of(weekday: int, minutes: int) -> MarketSession {
-    if 1 <= weekday <= 5 {
-        if OPEN <= minutes < CLOSE {
-            return MarketSession("open", f"Market open · closes in {format_span(CLOSE - minutes)}");
-        }
-        if PRE <= minutes < OPEN {
-            return MarketSession("pre", f"Pre-market · opens in {format_span(OPEN - minutes)}");
-        }
-        if CLOSE <= minutes < AFTER_END {
-            return MarketSession(
-                "after", f"After hours · ends in {format_span(AFTER_END - minutes)}"
-            );
-        }
-        if minutes < PRE {
-            return MarketSession(
-                "closed", f"Market closed · opens in {format_span(OPEN - minutes)}"
-            );
+    # (phase, from, until, what the countdown is to, when that is)
+    phases = [
+        ("open", OPEN, CLOSE, "Market open · closes", CLOSE),
+        ("pre", PRE, OPEN, "Pre-market · opens", OPEN),
+        ("after", CLOSE, AFTER_END, "After hours · ends", AFTER_END),
+        ("closed", 0, PRE, "Market closed · opens", OPEN),
+    ];
+    for (phase, start, end, line, at) in phases {
+        if 1 <= weekday <= 5 and start <= minutes < end {
+            return MarketSession(phase, f"{line} in {format_span(at - minutes)}");
         }
     }
     # Next weekday open, counting whole days from today
