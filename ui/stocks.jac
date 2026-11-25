@@ -44,6 +44,18 @@ def:pub ago(at: float) -> str {
     );
 }
 
+# What a panel shows in place of nothing: an icon, a title, a line, and whatever follows them
+def:pub Empty(
+    icon: any, title: str, body: str, children: any = None, className: str = "", width: str = ""
+) -> JsxElement {
+    return <div className={cx("empty-state", className)}>
+        <span className="empty-icon"><@icon className="size-5" /></span>
+        <h3>{title}</h3>
+        <p className={width}>{body}</p>
+        {children}
+    </div>;
+}
+
 # Our own quotes for the symbols on screen, by symbol. Read once when shown; in realtime mode read again
 # every 15 s while the tab is visible and when it comes back. A read that fails or comes back empty (the
 # rate limit) keeps the last good prices, and an answer for symbols no longer shown is dropped.

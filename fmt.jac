@@ -17,15 +17,6 @@ def grouped(v: float, digits: int = 2) -> str {
     return ("-" if v < 0 else "") + ",".join(parts) + ("." + scaled[-digits:] if digits else "");
 }
 
-"""An amount with two decimals, or up to four below 1 when `fine` (index points, crypto pairs)."""
-def amount(v: float, fine: bool = False) -> str {
-    if not fine or abs(v) >= 1 {
-        return grouped(v);
-    }
-    text = grouped(v, 4);
-    return text[:-2] if text.endswith("00") else text[:-1] if text.endswith("0") else text;
-}
-
 """A price in its currency. Under a cent (small coins, their moving averages) it keeps 4 significant digits:
 $0.00001235, not $0.00."""
 def money(price: float, currency: str = "USD") -> str {
@@ -94,14 +85,6 @@ test "prices keep two decimals, and stay visible under a cent" {
     assert money(1234567.891, "EUR") == "€1,234,567.89";
     assert money(31.5, "SAR") == "SAR 31.50";
     assert money(-2.5) == "-$2.50";
-}
-
-test "amounts group thousands and show small ones finer" {
-    assert amount(5123.456) == "5,123.46";
-    assert amount(0.12345, True) == "0.1235";
-    assert amount(0.5, True) == "0.50";
-    assert amount(-12.3) == "-12.30";
-    assert amount(64000.129, True) == "64,000.13";
 }
 
 test "market caps in dollars" {
