@@ -2,7 +2,9 @@
 import from "@jac/runtime" { Link }
 import from "lucide-react" { LineChart, Maximize2, Minimize2, Plus }
 
-glob TV_EMBED: str = "https://s3.tradingview.com/external-embedding/embed-widget-",
+glob BACKDROP: str = "fixed inset-0 z-50 bg-page/70 backdrop-blur-[3px]",
+     FILL: dict[str, str] = {"height": "100%", "width": "100%"},
+     TV_EMBED: str = "https://s3.tradingview.com/external-embedding/embed-widget-",
      DARK: dict[str, any] = {"colorTheme": "dark", "isTransparent": True},
      TEAL: str = "rgba(71, 217, 187, ",  # brand teal (oklch 0.80 0.13 176)
      HEAT: dict[str, any] = {
@@ -57,12 +59,7 @@ def:pub tv_locale(loc: str) -> str {
 }
 
 def:pub symbol_info(symbol: str, loc: str = "en") -> dict[str, any] {
-    return {
-        "symbol": symbol,
-        "colorTheme": "dark",
-        "isTransparent": True,
-        "locale": tv_locale(loc),
-    };
+    return {**DARK, "symbol": symbol, "locale": tv_locale(loc)};
 }
 
 # The side toolbar is the drawing tools (trend lines, Fibonacci, text); drawings last until reload
@@ -91,16 +88,12 @@ def:pub widget_config(widget: str, loc: str, extra: dict[str, any]) -> dict[str,
 }
 
 def mini_chart(symbol: str) -> dict[str, any] {
-    return {
-        "symbol": symbol,
-        "locale": "en",
-        "dateRange": "1M",
-        "colorTheme": "dark",
-        "isTransparent": True,
+    colors = {
         "trendLineColor": "#47d9bb",
-        "underLineColor": "rgba(71, 217, 187, 0.14)",
-        "underLineBottomColor": "rgba(71, 217, 187, 0)",
+        "underLineColor": TEAL + "0.14)",
+        "underLineBottomColor": TEAL + "0)",
     };
+    return {**DARK, "symbol": symbol, "locale": "en", "dateRange": "1M", **colors};
 }
 
 def amount(value: float, digits: int = 2) -> str {
@@ -137,11 +130,7 @@ def:pub TradingView(
     }
 
     can with [big] entry {
-        on_key.current = lambda (e: any) {
-            if e.key == "Escape" {
-                big = False;
-            }
-        };
+        on_key.current = lambda (e: any) { big = big and e.key != "Escape"; };
         if big {
             document.body.style.overflow = "hidden";
             window.addEventListener("keydown", on_key.current);
@@ -154,12 +143,7 @@ def:pub TradingView(
     }
 
     return <>
-        {<div
-            className="fixed inset-0 z-50 bg-page/70 backdrop-blur-[3px]"
-            onClick={lambda { big = False; }}
-        />
-            if big
-            else None}
+        {<div className={BACKDROP} onClick={lambda { big = False; }} /> if big else None}
         <div
             className={cx("tv-frame group", big and "fixed inset-3 z-50 shadow-[0_0_0_4px_var(--frame),0_24px_60px_oklch(0_0_0/0.6)]")}
             style={None if big else {"height": height}}
@@ -173,32 +157,29 @@ def:pub TradingView(
             >{<Minimize2 /> if big else <Maximize2 />}</button>
                 if expand
                 else None}
-            <div
-                ref={box}
-                className={cx("tradingview-widget-container", className)}
-                style={{"height": "100%", "width": "100%"}}
-            />
+            <div ref={box} className={cx("tradingview-widget-container", className)} style={FILL} />
         </div>
     </>;
 }
 
-# One headline tile: a label, its code and a price with the day's change. `href` makes it a link
-# (an index has no stock page); `price` 0 is a quote we do not have.
-def:pub PulseTile(
-    label: str,
+# One headline tile: a pulse's label, its code and a price with the day's change from `quote` (a Quote or a
+# DailyQuote, None when we have none). `href` makes it a link (an index has no stock page).
+def PulseTile(
+    p: Pulse,
     code: str,
+    quote: any,
     href: str = "",
-    price: float = 0.0,
-    change: float = 0.0,
-    percent: float = 0.0,
     before: str = "",
     after: str = "",
     loc: str = "en",
 ) -> JsxElement {
+    price = quote.price if quote else 0.0;
+    change = quote.change if quote else 0.0;
+    moved = ("+" if change > 0 else "") + amount(change, 4 if abs(change) < 1 else 2);
     body = <>
         <div className="bento-head">
             <span className="bento-ico"><LineChart /></span>
-            <span className="truncate">{label}</span>
+            <span className="truncate">{p.label}</span>
             <span className="mono ms-auto text-xs text-faint">{code}</span>
         </div>
         <PriceFlash
@@ -215,16 +196,9 @@ def:pub PulseTile(
         </PriceFlash>
         <div className="bento-foot">
             {<>
-                <ChangePill value={percent} />
+                <ChangePill value={quote.change_percent} />
                 <span className="num truncate">
-                    {tr(
-                        loc,
-                        "PulseTile.vsPrevClose",
-                        {
-                            "change": ("+" if change > 0 else "")
-                                + amount(change, 4 if abs(change) < 1 else 2),
-                        },
-                    )}
+                    {tr(loc, "PulseTile.vsPrevClose", {"change": moved})}
                 </span>
             </>
                 if price
@@ -292,41 +266,24 @@ def:pub IndexPulse(
     return <div className="bento">
         {
             for p in pulse {
-                q = quotes.get(p.finnhub);
                 d = daily.get(p.symbol);
                 stock = yahoo_app_symbol(p.symbol) if market.yahoo else None;
+                coin = p.finnhub.startswith("BINANCE:");
                 if market.yahoo {
-                    <PulseTile
-                        key={p.symbol}
-                        label={p.label}
-                        code={p.symbol.split(":")[-1]}
-                        href={f"/stocks/{stock}" if stock else ""}
-                        price={d.price if d else 0.0}
-                        change={d.change if d else 0.0}
-                        percent={d.change_percent if d else 0.0}
-                        before={f"{d.currency} " if d and stock else ""}
-                        {loc}
-                    />
+                    href = f"/stocks/{stock}" if stock else "";
+                    code = p.symbol.split(":")[-1];
+                    before = f"{d.currency} " if d and stock else "";
+                    <PulseTile key={p.symbol} {p} quote={d} {code} {href} {before} {loc} />
                 } elif p.finnhub {
-                    <PulseTile
-                        key={p.symbol}
-                        label={p.label}
-                        code={p.finnhub.replace("BINANCE:", "")}
-                        href={f"/stocks/{encodeURIComponent(p.finnhub)}"}
-                        price={q.price if q else 0.0}
-                        change={q.change if q else 0.0}
-                        percent={q.change_percent if q else 0.0}
-                        before={"" if p.finnhub.startswith("BINANCE:") else "$"}
-                        after={" USDT" if p.finnhub.startswith("BINANCE:") else ""}
-                        {loc}
-                    />
+                    href = f"/stocks/{encodeURIComponent(p.finnhub)}";
+                    code = p.finnhub.replace("BINANCE:", "");
+                    (before, after) = ("", " USDT") if coin else ("$", "");
+                    q = quotes.get(p.finnhub);
+                    <PulseTile key={p.symbol} {p} quote={q} {code} {href} {before} {after} {loc} />
                 } else {
+                    info = symbol_info(p.symbol, loc);
                     <div key={p.symbol} className="bento-tile p-1.5">
-                        <TradingView
-                            widget="single-quote"
-                            config={symbol_info(p.symbol, loc)}
-                            height={112}
-                        />
+                        <TradingView widget="single-quote" config={info} height={112} />
                     </div>
                 }
             }
