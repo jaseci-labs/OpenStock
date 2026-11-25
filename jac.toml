@@ -1,7 +1,6 @@
 [project]
 name = "openstock"
 version = "0.1.0"
-exclude = ["legacy/*"]
 
 [check.lint]
 select = ["style"]
