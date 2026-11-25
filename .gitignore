@@ -44,7 +44,7 @@ next-env.d.ts
 .vinext/
 .wrangler/
 node_modules/
-/.jac/
+.jac/
 /eco/web/package.json
 /eco/web/package-lock.json
 

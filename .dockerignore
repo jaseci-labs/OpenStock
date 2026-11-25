@@ -5,3 +5,4 @@ legacy
 .git
 .idea
 .env*
+.claude
