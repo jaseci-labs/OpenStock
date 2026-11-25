@@ -134,7 +134,7 @@ graph import {
     ui.i18n ++> ui.site | ui.market { tr }
     ui.kit ++> ui.site { cx, Dialog }
     ui.kit ++> ui.market { cx, ChangePill, PriceFlash, DataFreshness }
-    ui.kit ++> pages.index | pages.love | pages.sponsor | pages.changelog | pages.compare.index | pages.s.index {
+    ui.kit ++> pages.index | pages.love | pages.sponsor | pages.changelog | pages.compare.index | pages.s.index | pages.s {
         cx,
     }
     content.site ++> ui.site { REPO_URL, DISCORD_URL, RepoStats, format_count }
@@ -244,13 +244,13 @@ graph import {
         credit_label,
         credit_title,
     }
-    ui.site ++> pages.compare { PageHero }
+    ui.site ++> pages.compare { PageHero, Band }
     content.comparisons ++> pages.compare | pages.s.index { GUIDES }
     ui.site ++> pages.compare.index { PageHero, Faqs, CtaCard, NotFound, head, CTA, CTA_GHOST }
     content.comparisons ++> pages.compare.index { GUIDES, find_guide }
     content.tickers ++> pages.compare.index { Ticker, ticker_path }
     api.seo ++> pages.compare.index { guide_ld, find_ticker }
-    ui.site ++> pages.s { PageHero, head, use_anchor, CTA, CTA_GHOST }
+    ui.site ++> pages.s { PageHero, head, use_anchor, CTA, CTA_GHOST, WIDE }
     content.tickers ++> pages.s {
         Ticker,
         DIRECTORY_TITLE,
@@ -259,9 +259,10 @@ graph import {
         sector_anchor,
     }
     api.seo ++> pages.s { tickers_by_sector, directory_ld }
-    ui.site ++> pages.s.index { Go, Faqs, CtaCard, NotFound, head, CTA, CTA_GHOST }
+    ui.site ++> pages.s.index { Go, Faqs, CtaCard, NotFound, head, CTA, CTA_GHOST, Hatch }
     ui.market ++> pages.s.index { TradingView, symbol_info, candle_chart }
     content.tickers ++> pages.s.index {
+        Ticker,
         Filing,
         EdgarCompany,
         TickerPage,

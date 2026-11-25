@@ -3,7 +3,10 @@ import from "@jac/runtime" { Link }
 
 glob EXAMPLES: list[str] = ["AAPL", "MSFT", "NVDA", "AMZN", "JPM", "XOM"],
      COLUMN: str = "mx-auto max-w-[800px] px-5",
-     H2: str = "text-[28px] font-bold tracking-[-0.04em]";
+     H2: str = "text-[28px] font-bold tracking-[-0.04em]",
+     # Env var names are one long word; let them break instead of widening the page on phones
+     PARAGRAPH: str = "text-[16px] leading-relaxed text-muted-foreground [overflow-wrap:anywhere]",
+     COMPANY: str = "pill h-9 px-3 text-[13px] hover:text-foreground";
 
 def:pub page(slug: str) -> JsxPage {
     has examples: list[Ticker] = [];
@@ -32,12 +35,8 @@ def:pub page(slug: str) -> JsxPage {
                 <section key={part.heading}>
                     <h2 className={H2}>{part.heading}</h2>
                     <div className="mt-3 flex flex-col gap-4">
-                        {#* Env var names are one long word; let them break instead of widening the page on phones *#}
                         {[
-                            <p
-                                key={text}
-                                className="text-[16px] leading-relaxed text-muted-foreground [overflow-wrap:anywhere]"
-                            >{text}</p>
+                            <p key={text} className={PARAGRAPH}>{text}</p>
                             for text in part.paragraphs
                         ]}
                     </div>
@@ -54,10 +53,9 @@ def:pub page(slug: str) -> JsxPage {
             <ul className="mt-4 flex flex-wrap gap-2">
                 {[
                     <li key={t.symbol}>
-                        <Link
-                            to={ticker_path(t.symbol)}
-                            className="pill h-9 px-3 text-[13px] hover:text-foreground"
-                        ><span className="mono">{t.symbol}</span> {t.name}</Link>
+                        <Link to={ticker_path(t.symbol)} className={COMPANY}><span className="mono">
+                            {t.symbol}
+                        </span> {t.name}</Link>
                     </li>
                     for t in examples
                 ]}
