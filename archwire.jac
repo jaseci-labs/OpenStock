@@ -86,10 +86,10 @@ graph import {
     ui.i18n ++> "pages/sign-in" | "pages/sign-up" | "pages/forgot-password" | "pages/reset-password" {
         t,
     }
-    ui.kit ++> web { Toasts }
+    ui.kit ++> web { Toasts, listen }
     ui.kit ++> ui.forms { cx, Menu }
     ui.kit ++> ui.shell { cx, listen, Dialog, Menu, MenuItem, toast_error, toast_ok }
-    ui.kit ++> pages.layout { Loading }
+    ui.kit ++> pages.layout { Loading, listen }
     ui.kit ++> "pages/sign-in" | "pages/sign-up" { toast_error }
     ui.kit ++> "pages/forgot-password" | "pages/reset-password" { toast_error, toast_ok }
     ui.session ++> ui.forms { auth_ways, social_sign_in }

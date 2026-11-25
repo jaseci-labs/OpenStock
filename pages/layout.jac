@@ -34,7 +34,6 @@ async def starred -> list[dict[str, str]] {
 def:pub layout -> JsxLayout {
     has who: dict[str, str] = {};
     has watchlist: list[dict[str, str]] = [];
-    has on_change: Ref[any] = Ref(None);
 
     path = useLocation().pathname;
     kind = area(path);
@@ -47,16 +46,7 @@ def:pub layout -> JsxLayout {
         }
     }
 
-    can with entry {
-        on_change.current = refresh;
-        window.addEventListener("userchange", on_change.current);
-        window.addEventListener("watchlistchange", on_change.current);
-    }
-
-    can with exit {
-        window.removeEventListener("userchange", on_change.current);
-        window.removeEventListener("watchlistchange", on_change.current);
-    }
+    listen(window, ["userchange", "watchlistchange"], refresh);
 
     can with [path] entry {
         head(TITLES.get(path, "OpenStock"), ABOUT.get(path, ""));

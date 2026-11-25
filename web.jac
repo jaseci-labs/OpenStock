@@ -4,9 +4,7 @@ import "./styles/globals.css";
 def:pub app(children: any) -> JsxElement {
     has loc: str = locale();
 
-    can with entry {
-        window.addEventListener("localechange", lambda { loc = locale(); });
-    }
+    listen(window, ["localechange"], lambda { loc = locale(); });
 
     return <><div key={loc} className="contents">{children}</div><Toasts /></>;
 }
