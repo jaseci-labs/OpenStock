@@ -1,62 +1,19 @@
 import from "lucide-react" { BookOpen, Github, MessageCircle }
 
-glob CARDS: list[list[any]] = [
-         [
-             BookOpen,
-             "How it works",
-             "Data sources, background jobs and the AI behind the emails.",
-             "/api-docs",
-             "Read the architecture",
-         ],
-         [
-             MessageCircle,
-             "Community chat",
-             "Get answers from other users and the maintainers.",
-             DISCORD_URL,
-             "Join Discord",
-         ],
-         [
-             Github,
-             "Report a bug",
-             "Found something broken? Tell us on GitHub.",
-             REPO_URL + "/issues",
-             "Open an issue",
-         ],
-     ],
-     FAQS: list[list[str]] = [
-         [
-             "Is OpenStock really free?",
-             "Yes. We run on sponsors and community contributions. Charts, watchlists and research stay free. OpenStock Cloud, coming soon, adds live quotes and email price alerts for $5 a month. Self-hosting includes both.",
-         ],
-         [
-             "How do I add a stock to my watchlist?",
-             "Press ⌘K (or Search stocks in the sidebar), open the company, then press Watch. It shows up in your watchlist and in the sidebar.",
-         ],
-         [
-             "Can I sort stocks into lists?",
-             "Yes. Next to your starred watchlist of up to 50 stocks, you can make up to 10 named lists of 50 each. Add a stock to one with the list button on any watchlist row, or straight from search.",
-         ],
-         [
-             "Is OpenStock in my language?",
-             "The app, the sign-in pages and the emails are in English, Polish and Arabic, with Arabic laid out right to left. OpenStock follows your browser’s language, or pick one from Language in the sidebar. This public site is in English.",
-         ],
-         [
-             "Where does the market data come from?",
-             "Charts come live from TradingView. Quotes, watchlist prices and alerts come from Finnhub; on this site they refresh hourly and every price shows when it was last traded.",
-         ],
-         [
-             "Which markets are supported?",
-             "US stocks, crypto and forex live; Canada and Australia delayed; Saudi Arabia and Poland delayed through Yahoo Finance; India (through BSE) and Germany end of day. Alerts work for US stocks and crypto.",
-         ],
-         [
-             "My alert hasn’t fired.",
-             "Price alerts are part of OpenStock Cloud (or a self-hosted instance in realtime mode). There they are checked every five minutes and emailed to your account address when the price crosses your target, or the 20, 50, 100 or 200-day moving average you picked. Check the alert’s status on the watchlist page.",
-         ],
-         [
-             "Can I contribute code or designs?",
-             "Absolutely. Issues labelled “good first issue” are a good start. We welcome designers, developers and writers alike.",
-         ],
-     ];
+glob ICONS: list[any] = [BookOpen, MessageCircle, Github],
+     CARDS: list[list[str]] = rows(f"""
+How it works | Data sources, background jobs and the AI behind the emails. | /api-docs | Read the architecture
+Community chat | Get answers from other users and the maintainers. | {DISCORD_URL} | Join Discord
+Report a bug | Found something broken? Tell us on GitHub. | {REPO_URL}/issues | Open an issue"""),
+     FAQS: list[list[str]] = rows("""
+Is OpenStock really free? | Yes. We run on sponsors and community contributions. Charts, watchlists and research stay free. OpenStock Cloud, coming soon, adds live quotes and email price alerts for $5 a month. Self-hosting includes both.
+How do I add a stock to my watchlist? | Press ⌘K (or Search stocks in the sidebar), open the company, then press Watch. It shows up in your watchlist and in the sidebar.
+Can I sort stocks into lists? | Yes. Next to your starred watchlist of up to 50 stocks, you can make up to 10 named lists of 50 each. Add a stock to one with the list button on any watchlist row, or straight from search.
+Is OpenStock in my language? | The app, the sign-in pages and the emails are in English, Polish and Arabic, with Arabic laid out right to left. OpenStock follows your browser’s language, or pick one from Language in the sidebar. This public site is in English.
+Where does the market data come from? | Charts come live from TradingView. Quotes, watchlist prices and alerts come from Finnhub; on this site they refresh hourly and every price shows when it was last traded.
+Which markets are supported? | US stocks, crypto and forex live; Canada and Australia delayed; Saudi Arabia and Poland delayed through Yahoo Finance; India (through BSE) and Germany end of day. Alerts work for US stocks and crypto.
+My alert hasn’t fired. | Price alerts are part of OpenStock Cloud (or a self-hosted instance in realtime mode). There they are checked every five minutes and emailed to your account address when the price crosses your target, or the 20, 50, 100 or 200-day moving average you picked. Check the alert’s status on the watchlist page.
+Can I contribute code or designs? | Absolutely. Issues labelled “good first issue” are a good start. We welcome designers, developers and writers alike.""");
 
 def:pub page -> JsxPage {
     return <>
@@ -65,28 +22,25 @@ def:pub page -> JsxPage {
             title="How can we help?"
             sub="Community-powered support for everyone."
         />
-        <section className="mx-auto mt-14 grid max-w-[1200px] gap-3 px-5 md:grid-cols-3">
+        <Band className="mt-14 grid gap-3 md:grid-cols-3">
             {[
                 <IconCard
-                    key={c[1]}
-                    icon={c[0]}
-                    title={c[1]}
-                    footer={<Go to={c[3]} className="btn btn-ghost w-full">{c[4]}</Go>}
-                >{c[2]}</IconCard>
-                for c in CARDS
+                    key={c[0]}
+                    icon={ICONS[i]}
+                    title={c[0]}
+                    footer={<Go to={c[2]} className="btn btn-ghost w-full">{c[3]}</Go>}
+                >{c[1]}</IconCard>
+                for (i, c) in enumerate(CARDS)
             ]}
-        </section>
-        <section className="mx-auto mt-24 max-w-[1200px] px-5">
-            <SectionHead kicker="FAQ" title="Common questions." />
-            <Faqs items={FAQS} hover />
-        </section>
-        <section className="mx-auto mt-24 max-w-[1200px] px-5">
+        </Band>
+        <Band kicker="FAQ" title="Common questions."><Faqs items={FAQS} hover /></Band>
+        <Band>
             <CtaCard
                 title="Still stuck?"
                 body="Our team and community answer emails, for free."
                 to={f"mailto:{SPONSOR_CONTACT_EMAIL}"}
                 label="Email support"
             />
-        </section>
+        </Band>
     </>;
 }
