@@ -26,18 +26,10 @@ def:pub page -> JsxPage {
     }
 
     return <>
-        <h1 className="form-title mb-2">{t("SignIn.title")}</h1>
-        <p className="mb-8 text-faint">{t("SignIn.subtitle")}</p>
+        <AuthHead ns="SignIn" />
         <SocialButtons />
         <form onSubmit={submit} noValidate className="space-y-5">
-            <Field
-                name="email"
-                label={t("AuthFields.email")}
-                placeholder="opendevsociety@cc.cc"
-                value={email}
-                onInput={lambda (v: str) { email = v; }}
-                error={email_problem(email) if tried else ""}
-            />
+            <EmailField value={email} onInput={lambda (v: str) { email = v; }} {tried} />
             <Field
                 name="password"
                 kind="password"
@@ -52,18 +44,7 @@ def:pub page -> JsxPage {
                     {t("SignIn.forgotPassword")}
                 </Link>
             </div>
-            <SubmitButton
-                {busy}
-                label={t("SignIn.submit")}
-                busyLabel={t("SignIn.submitting")}
-                className="yellow-btn mt-5 w-full"
-            />
-            <FooterLink
-                text={t("SignIn.noAccount")}
-                linkText={t("SignIn.createAccount")}
-                href="/sign-up"
-            />
-            <Branding className="mt-10 flex justify-center" />
+            <AuthEnd {busy} ns="SignIn" text="noAccount" link="createAccount" href="/sign-up" />
         </form>
     </>;
 }

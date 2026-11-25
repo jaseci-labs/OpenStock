@@ -97,40 +97,22 @@ graph import {
     ui.session ++> "pages/sign-in" | "pages/sign-up" | "pages/forgot-password" | "pages/reset-password" {
         auth_post,
     }
-    ui.forms ++> "pages/sign-in" {
-        Field,
-        SubmitButton,
-        FooterLink,
-        Branding,
-        SocialButtons,
-        email_problem,
+    ui.forms ++> "pages/sign-in" | "pages/sign-up" | "pages/forgot-password" | "pages/reset-password" {
+        AuthHead,
     }
+    ui.forms ++> "pages/sign-in" | "pages/forgot-password" | "pages/reset-password" { AuthEnd }
+    ui.forms ++> "pages/sign-in" | "pages/sign-up" | "pages/forgot-password" { EmailField }
+    ui.forms ++> "pages/sign-in" | "pages/forgot-password" { email_problem }
+    ui.forms ++> "pages/sign-in" | "pages/sign-up" | "pages/reset-password" { Field }
+    ui.forms ++> "pages/sign-in" | "pages/sign-up" { SocialButtons }
+    ui.forms ++> "pages/sign-up" | "pages/reset-password" { PasswordChecklist, password_problem }
     ui.forms ++> "pages/sign-up" {
-        Field,
         SubmitButton,
         FooterLink,
         Branding,
-        SocialButtons,
         ChoiceChips,
         CountrySelect,
-        PasswordChecklist,
         email_problem,
-        password_problem,
-    }
-    ui.forms ++> "pages/forgot-password" {
-        Field,
-        SubmitButton,
-        FooterLink,
-        Branding,
-        email_problem,
-    }
-    ui.forms ++> "pages/reset-password" {
-        Field,
-        SubmitButton,
-        FooterLink,
-        Branding,
-        PasswordChecklist,
-        password_problem,
     }
     ui.i18n ++> ui.site | ui.market { tr }
     ui.kit ++> ui.site { cx, Dialog }

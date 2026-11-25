@@ -21,29 +21,10 @@ def:pub page -> JsxPage {
     }
 
     return <>
-        <h1 className="form-title">{t("ForgotPassword.title")}</h1>
-        <p className="mb-6 text-sm text-gray-400">{t("ForgotPassword.subtitle")}</p>
+        <AuthHead ns="ForgotPassword" quiet />
         <form onSubmit={submit} noValidate className="space-y-5">
-            <Field
-                name="email"
-                label={t("AuthFields.email")}
-                placeholder="opendevsociety@cc.cc"
-                value={email}
-                onInput={lambda (v: str) { email = v; }}
-                error={email_problem(email) if tried else ""}
-            />
-            <SubmitButton
-                {busy}
-                label={t("ForgotPassword.submit")}
-                busyLabel={t("ForgotPassword.submitting")}
-                className="yellow-btn mt-5 w-full"
-            />
-            <FooterLink
-                text={t("ForgotPassword.remembered")}
-                linkText={t("ForgotPassword.signIn")}
-                href="/sign-in"
-            />
-            <Branding className="mt-10 flex justify-center" />
+            <EmailField value={email} onInput={lambda (v: str) { email = v; }} {tried} />
+            <AuthEnd {busy} ns="ForgotPassword" text="remembered" link="signIn" href="/sign-in" />
         </form>
     </>;
 }
