@@ -1,13 +1,9 @@
-"""How numbers are written on every page: prices, amounts, market caps and day changes. Pure, so both sides and the
+"""How numbers are written on every page: prices, amounts and market caps. Pure, so both sides and the
 tests share it (no space holds this module)."""
 
 # What Intl's en-US currency style writes before the amount; any other currency is its code and a hard space
 glob CURRENCY_SIGN: dict[str, str] = {"USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥", "INR": "₹"},
-     SCALES: list[tuple[float, str]] = [(1e12, "T"), (1e9, "B"), (1e6, "M")];
-
-def finite(v: float | None) -> bool {
-    return v is not None and v == v and abs(v) < 1e300;
-}
+     SCALES: list[tuple[float, str]] = [(1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "K")];
 
 """`v` with thousands separators and `digits` decimals: 1234.5 -> "1,234.50"."""
 def grouped(v: float, digits: int = 2) -> str {
@@ -39,35 +35,14 @@ def signed(v: float) -> str {
     return f"{'+' if v > 0 else ''}{v:.2f}";
 }
 
-def change_percent(v: float | None) -> str {
-    return "" if v is None else signed(v) + "%";
-}
-
-def change_color(v: float | None) -> str {
-    return "text-gray-400" if not v else "text-green-500" if v > 0 else "text-red-500";
-}
-
-def scaled(v: float, units: list[tuple[float, str]]) -> str | None {
-    for (size, unit) in units {
-        if v >= size {
-            return f"{v / size:.2f}{unit}";
-        }
-    }
-    return None;
-}
-
-"""A market cap in dollars: "$3.10T", "$900.00B", "$25.00M" or "$999999.99"."""
-def market_cap_usd(v: float | None, na: str = "N/A") -> str {
-    return na if not finite(v) or v <= 0 else "$" + (scaled(v, SCALES) or f"{v:.2f}");
-}
-
 """A market cap as Finnhub sends it, in millions: 150000 -> "150.00B"."""
 def compact(millions: float | None, na: str = "N/A") -> str {
-    if not finite(millions) {
+    if millions is None or millions != millions or abs(millions) >= 1e300 {
         return na;
     }
     v = millions * 1e6;
-    return scaled(v, SCALES + [(1e3, "K")]) or f"{v:.0f}";
+    hit = [f"{v / size:.2f}{unit}" for (size, unit) in SCALES if v >= size];
+    return hit[0] if hit else f"{v:.0f}";
 }
 
 """How often on-screen prices are asked for again, in ms: every 15 s in realtime mode, never (0) in cached mode,
@@ -87,17 +62,6 @@ test "prices keep two decimals, and stay visible under a cent" {
     assert money(-2.5) == "-$2.50";
 }
 
-test "market caps in dollars" {
-    for bad in [0.0, -100.0, float("nan"), float("inf")] {
-        assert market_cap_usd(bad) == "N/A";
-    }
-    assert market_cap_usd(None, "—") == "—";
-    assert market_cap_usd(3.1e12) == "$3.10T";
-    assert market_cap_usd(900e9) == "$900.00B";
-    assert market_cap_usd(25e6) == "$25.00M";
-    assert market_cap_usd(999999.99) == "$999999.99";
-}
-
 test "market caps in millions get T/B/M/K suffixes" {
     assert compact(3000000) == "3.00T";
     assert compact(150000) == "150.00B";
@@ -106,19 +70,6 @@ test "market caps in millions get T/B/M/K suffixes" {
     for missing in [None, float("nan"), float("inf")] {
         assert compact(missing) == "N/A";
     }
-}
-
-test "day changes carry their sign and colour" {
-    assert change_percent(None) == "";
-    assert change_percent(2.5) == "+2.50%";
-    assert change_percent(-1.23) == "-1.23%";
-    assert change_percent(0) == "0.00%";
-    assert [change_color(v) for v in [0.0, None, 1.5, -0.5]] == [
-        "text-gray-400",
-        "text-gray-400",
-        "text-green-500",
-        "text-red-500",
-    ];
 }
 
 test "prices are polled every 15 s in realtime mode only" {

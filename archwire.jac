@@ -337,7 +337,7 @@ graph import {
         ago,
         NAME_INPUT,
     }
-    ui.stocks ++> pages.stocks { use_live, Empty, WatchButton, AlertButton, ListButton, ago }
+    ui.stocks ++> pages.stocks { use_live, Empty, WatchButton, AlertButton, ListButton, ago, quiet }
     fmt ++> pages.dashboard { grouped }
     fmt ++> pages.watchlist | pages.stocks { money, signed, compact }
     model ++> pages.dashboard { Market, DailyQuote, yahoo_app_symbol }
