@@ -55,16 +55,12 @@ def:pub social_sign_in(action: any, back: str = "/dashboard") {
     location.assign(action.redirect);
 }
 
-def:pub has_session -> bool {
-    return bool(__getLocalStorage("jac_token"));
-}
-
 # Reads the signed-in user (their profile's name, email, country, investmentGoals, riskTolerance,
 # preferredIndustry) for me(); False for no one. An account made through GitHub or Google has
 # no profile, and is called what that service calls it.
 async def:pub load_user -> bool {
     user = {};
-    if has_session() {
+    if __getLocalStorage("jac_token") {
         try {
             profile: dict[str, str] = await get_profile();
             called = __getLocalStorage("jac_name") or "";
