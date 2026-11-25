@@ -35,6 +35,15 @@ def:pub problem(code: str, name: str = "") -> str {
     return t(f"Errors.{code}", {"max": caps.get(code, 0), "name": name}) if code else "";
 }
 
+# What a call to the server gives, or `fallback` when it fails
+async def:pub quiet(call: any, fallback: any = None) -> any {
+    try {
+        return await call;
+    } except RemoteError {
+        return fallback;
+    }
+}
+
 # "3 hours ago" for a unix time, in the user's language
 def:pub ago(at: float) -> str {
     past = at - Date.now() / 1000;
