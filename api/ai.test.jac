@@ -13,15 +13,7 @@ def fake_send(url: str, headers: dict[str, str], body: any, timeout: float) -> t
 
 """Start from `env` alone for the provider variables, answering requests from `answers`."""
 def stub(env: dict[str, str] = {}, answers: dict[str, tuple[int, any]] = {}) {
-    for name in [
-        "AI_PROVIDER",
-        "GEMINI_API_KEY",
-        "GEMINI_MODEL",
-        "MINIMAX_API_KEY",
-        "MINIMAX_MODEL",
-        "MINIMAX_BASE_URL",
-        "SIRAY_API_KEY",
-    ] {
+    for name in "AI_PROVIDER GEMINI_API_KEY GEMINI_MODEL MINIMAX_API_KEY MINIMAX_MODEL MINIMAX_BASE_URL SIRAY_API_KEY".split() {
         os.environ.pop(name, None);
     }
     os.environ.update(env);
@@ -48,33 +40,18 @@ def failure(prompt: str, name: str = "") -> str {
 
 test "the provider defaults to gemini" {
     stub();
-    assert provider()
-        == Provider(
-            name="gemini",
-            api_key="",
-            base_url="https://generativelanguage.googleapis.com/v1beta/models",
-            model="gemini-2.5-flash-lite",
-        );
+    google = "https://generativelanguage.googleapis.com/v1beta/models";
+    assert provider() == Provider("gemini", "", google, "gemini-2.5-flash-lite");
     stub({"AI_PROVIDER": "nonsense"});
     assert provider().name == "gemini";
 }
 
 test "minimax and siray have their own settings and keys" {
     stub({"MINIMAX_API_KEY": "test-key", "SIRAY_API_KEY": "siray-key"});
-    assert provider("minimax")
-        == Provider(
-            name="minimax",
-            api_key="test-key",
-            base_url="https://api.minimax.io/v1",
-            model="MiniMax-M3.1-Flash",
-        );
-    assert provider("siray")
-        == Provider(
-            name="siray",
-            api_key="siray-key",
-            base_url="https://api.siray.ai/v1",
-            model="siray-1.0-ultra",
-        );
+    want = Provider("minimax", "test-key", "https://api.minimax.io/v1", "MiniMax-M3.1-Flash");
+    assert provider("minimax") == want;
+    want = Provider("siray", "siray-key", "https://api.siray.ai/v1", "siray-1.0-ultra");
+    assert provider("siray") == want;
 }
 
 test "the environment replaces the gemini model and the minimax model and base URL, nothing of siray's" {
@@ -132,17 +109,10 @@ test "gemini is asked in its own format" {
 test "siray is asked in the OpenAI-compatible format" {
     stub({"SIRAY_API_KEY": "test-siray-key"}, {"": chat_says("Hello from Siray")});
     assert ask_provider("test prompt", "siray") == "Hello from Siray";
-    assert sent == [
-        (
-            "https://api.siray.ai/v1/chat/completions",
-            {"Authorization": "Bearer test-siray-key"},
-            {
-                "model": "siray-1.0-ultra",
-                "messages": [{"role": "user", "content": "test prompt"}],
-                "temperature": 0.7,
-            },
-        ),
-    ];
+    said = [{"role": "user", "content": "test prompt"}];
+    body = {"model": "siray-1.0-ultra", "messages": said, "temperature": 0.7};
+    url = "https://api.siray.ai/v1/chat/completions";
+    assert sent == [(url, {"Authorization": "Bearer test-siray-key"}, body)];
 }
 
 test "an error status and an empty answer are errors" {
@@ -161,25 +131,15 @@ test "an error status and an empty answer are errors" {
 test "minimax requests keep the configured model and base URL, as the primary and as the fallback" {
     prompt = "Summarize this week's market news.";
     for base in ["", "https://api.minimaxi.com/v1", "https://custom.minimax.example/v1"] {
-        for model in [
-            "",
-            "MiniMax-M3.1-Flash",
-            "MiniMax-M3",
-            "MiniMax-M2.5-highspeed",
-            "custom-model",
-        ] {
+        for model in [""]
+            + "MiniMax-M3.1-Flash MiniMax-M3 MiniMax-M2.5-highspeed custom-model".split() {
             env = {"MINIMAX_API_KEY": "test-minimax-key", "GEMINI_API_KEY": "test-primary-key"}
                 | ({"MINIMAX_MODEL": model} if model else {})
                 | ({"MINIMAX_BASE_URL": base} if base else {});
-            expected = (
-                f"{base or 'https://api.minimax.io/v1'}/chat/completions",
-                {"Authorization": "Bearer test-minimax-key"},
-                {
-                    "model": model or "MiniMax-M3.1-Flash",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.7,
-                },
-            );
+            said = [{"role": "user", "content": prompt}];
+            body = {"model": model or "MiniMax-M3.1-Flash", "messages": said, "temperature": 0.7};
+            url = f"{base or 'https://api.minimax.io/v1'}/chat/completions";
+            expected = (url, {"Authorization": "Bearer test-minimax-key"}, body);
             answers = {"googleapis": (503, None), "": chat_says("MiniMax response")};
             stub(env | {"AI_PROVIDER": "minimax"}, answers);
             assert ask_ai(prompt) == "MiniMax response" and sent == [expected];
