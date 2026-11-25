@@ -3,15 +3,15 @@
 <p align="center"><sub><a href="#sponsors">SPONSORED BY</a></sub></p>
 
 <p align="center">
-  <a href="https://proxy-seller.com/?partner=0PC6QUN0HW8FI0"><img src="public/assets/images/proxy-seller-banner.png" alt="Proxy-Seller: 220+ GEOs, $0.70/GB, 15% off with promo code RAVI" width="420"></a>
+  <a href="https://proxy-seller.com/?partner=0PC6QUN0HW8FI0"><img src="eco/web/public/assets/images/proxy-seller-banner.png" alt="Proxy-Seller: 220+ GEOs, $0.70/GB, 15% off with promo code RAVI" width="420"></a>
 </p>
 
 <p align="center">
-  <a href="https://www.swiftproxy.net/?ref=OpenStock"><picture><source media="(prefers-color-scheme: dark)" srcset="public/assets/images/swiftproxy-logo.png"><img src="public/assets/images/swiftproxy-banner.png" alt="Swiftproxy: 90M+ residential IPs across 220+ locations, 10% off with code PROXY90" width="300"></picture></a>
+  <a href="https://www.swiftproxy.net/?ref=OpenStock"><picture><source media="(prefers-color-scheme: dark)" srcset="eco/web/public/assets/images/swiftproxy-logo.png"><img src="eco/web/public/assets/images/swiftproxy-banner.png" alt="Swiftproxy: 90M+ residential IPs across 220+ locations, 10% off with code PROXY90" width="300"></picture></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/diip3sh/orbit"><picture><source media="(prefers-color-scheme: dark)" srcset="public/assets/icons/orbit.png"><img src="public/assets/icons/orbit-black.png" alt="" height="20"></picture></a> <a href="https://github.com/diip3sh/orbit"><b>Orbit</b></a>. Free, open-source macOS screen recorder, screenshot tool and video editor: auto-zoom, smooth cursor, backgrounds, web recordings and AI agent recording.
+  <a href="https://github.com/diip3sh/orbit"><picture><source media="(prefers-color-scheme: dark)" srcset="eco/web/public/assets/icons/orbit.png"><img src="eco/web/public/assets/icons/orbit-black.png" alt="" height="20"></picture></a> <a href="https://github.com/diip3sh/orbit"><b>Orbit</b></a>. Free, open-source macOS screen recorder, screenshot tool and video editor: auto-zoom, smooth cursor, backgrounds, web recordings and AI agent recording.
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 </p>
 <div align="center">
   <br />
-  <a href="https://openstock-ods.vercel.app"><img src="./public/assets/images/dashboard.png" alt="OpenStock: the landing page with the market hours dial, index pulse and live charts" /></a>
+  <a href="https://openstock-ods.vercel.app"><img src="./eco/web/public/assets/images/dashboard.png" alt="OpenStock: the landing page with the market hours dial, index pulse and live charts" /></a>
   <br />
   <br />
 
@@ -40,13 +40,8 @@
 
   <div>
     <a href="https://github.com/Open-Dev-Society/OpenStock/releases/latest"><img src="https://img.shields.io/github/v/release/Open-Dev-Society/OpenStock?style=for-the-badge&label=release&color=30B27A" alt="Latest release" /></a>
-    <img src="https://img.shields.io/badge/-Next.js-black?style=for-the-badge&logoColor=white&logo=next.js&color=000000" alt="Next.js badge" />
-    <img src="https://img.shields.io/badge/-TypeScript-black?style=for-the-badge&logoColor=white&logo=typescript&color=3178C6"/>
+    <img src="https://img.shields.io/badge/-Jac-black?style=for-the-badge&logoColor=white&color=000000" alt="Jac badge" />
     <img src="https://img.shields.io/badge/-Tailwind%20CSS-black?style=for-the-badge&logoColor=white&logo=tailwindcss&color=38B2AC"/>
-    <img src="https://img.shields.io/badge/-shadcn/ui-black?style=for-the-badge&logoColor=white&logo=shadcnui&color=000000"/>
-    <img src="https://img.shields.io/badge/-Better%20Auth-black?style=for-the-badge&logoColor=white&logo=betterauth&color=000000"/>
-    <img src="https://img.shields.io/badge/-MongoDB-black?style=for-the-badge&logoColor=white&logo=mongodb&color=00A35C"/>
-    <img src="https://img.shields.io/badge/-Inngest-black?style=for-the-badge&logoColor=white&logo=inngest&color=000000"/>
     <img src="https://img.shields.io/badge/-TradingView-black?style=for-the-badge&logoColor=white&logo=tradingview&color=2962FF"/>
     <img src="https://img.shields.io/badge/-Finnhub-black?style=for-the-badge&logoColor=white&color=30B27A"/>
     <img src="https://img.shields.io/badge/-Docker-black?style=for-the-badge&logoColor=white&logo=docker&color=2496ED"/>
@@ -69,7 +64,7 @@
 3. ⚙️ [Tech stack](#tech-stack)
 4. 🤸 [Quick start](#quick-start)
 5. 🔐 [Environment variables](#environment-variables)
-6. 🐳 [Self-hosting](#self-hosting): Docker, prebuilt image, one-click deploys, Railway, Cloudflare Workers (experimental), Vercel
+6. 🐳 [Self-hosting](#self-hosting): Docker, prebuilt image, Railway
 7. 🧱 [Project structure](#project-structure)
 8. 📡 [How it works](#data--integrations)
 9. 🌍 [Market support](#market-support)
@@ -130,31 +125,32 @@ Saudi and Polish prices come from Yahoo Finance, delayed, on every deployment, b
 
 | | |
 |---|---|
-| App | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui and Radix, next-intl (English, Polish, Arabic) |
-| Accounts and data | Better Auth, MongoDB with Mongoose |
+| App | [Jac](https://github.com/jaseci-labs/neojac), compiled by neojac into one self-contained program: a native server and React 19 pages, Tailwind CSS v4, English, Polish and Arabic |
+| Accounts and data | neojac's accounts and its kept graph (SQLite files in the app's data directory); no database to run |
 | Market data | Finnhub, TradingView widgets, Yahoo Finance (Saudi and Polish quotes), Adanos (sentiment), AlphAI (scored news) |
-| Background jobs | Inngest |
-| Email | Nodemailer (Gmail), Kit for the newsletter |
+| Background jobs | Scheduled functions inside the app |
+| Email | SMTP (Gmail) for welcome and alert emails, Kit for the newsletter |
 | AI | Gemini, MiniMax or Siray |
-| Hosting | Vercel; a Docker image on GitHub Container Registry for self-hosting; Cloudflare Workers through vinext (experimental) |
+| Hosting | The program itself, or the Docker image on GitHub Container Registry |
 
 ## 🤸 Quick start <a name="quick-start"></a>
 
-You need Node.js 22 LTS, a MongoDB database (a free Atlas cluster, or the [Docker setup](#docker-setup)) and a free [Finnhub](https://finnhub.io) key.
+You need [neojac](https://github.com/jaseci-labs/neojac) 0.5.1 and a free [Finnhub](https://finnhub.io) key.
 
 ```bash
+curl -fsSL https://github.com/jaseci-labs/neojac/releases/latest/download/install.sh | bash -s -- --version 0.5.1
 git clone https://github.com/Open-Dev-Society/OpenStock.git
 cd OpenStock
-npm ci
-cp .env.example .env         # fill in MONGODB_URI, BETTER_AUTH_SECRET and FINNHUB_API_KEY
-node scripts/check-env.mjs   # checks your .env
-npm run test:db              # checks the MongoDB connection
-npm run dev                  # http://localhost:3000
+neojac install                    # the pages' npm packages
+cp .env.example .env              # fill in FINNHUB_API_KEY
+neojac run tools/check_env.jac    # checks your .env
+set -a; . ./.env; set +a          # the app reads its environment; it does not read .env itself
+neojac run web                    # http://127.0.0.1:8000
 ```
 
-Welcome emails, price alerts and the weekly digest run as [Inngest](https://www.inngest.com) jobs. Locally, start Inngest's dev server alongside the app: `npx inngest-cli@latest dev`.
+`neojac dev web` rebuilds as you edit. For production, `neojac build web` writes `dist/web-<platform>/`: copy that directory, `messages/` and `data/` to a machine of the same platform and run `./web` there. Nothing else needs to be installed.
 
-For production: `npm run build && npm start`.
+Welcome emails, price alerts and the weekly digest run inside the app; there is no separate job service.
 
 ## 🔐 Environment variables <a name="environment-variables"></a>
 
@@ -162,18 +158,17 @@ Every variable is listed with comments in [`.env.example`](.env.example). The on
 
 | Variable | Needed | What it's for |
 |---|---|---|
-| `MONGODB_URI` | Yes | Your MongoDB database |
-| `BETTER_AUTH_SECRET` | Yes | Signs sessions. Generate it with `openssl rand -hex 32`. Auth refuses to run in production without it |
-| `BETTER_AUTH_URL` | Yes | The app's public URL, used for auth callbacks and links in emails |
 | `FINNHUB_API_KEY` | Yes | Market data. Or put several free keys, comma-separated, in `FINNHUB_API_KEYS`: they're rotated, and each adds 60 requests a minute |
-| `NEXT_PUBLIC_OPENSTOCK_DATA_MODE` | No | `cached` (hourly, the default) or `realtime` (every 15 seconds, with price alerts). Fixed when the app is built: rebuild after changing it |
-| `INNGEST_SIGNING_KEY`, `INNGEST_EVENT_KEY` | In production | Background jobs: welcome emails, price alerts and the weekly digest |
-| `NODEMAILER_EMAIL`, `NODEMAILER_PASSWORD` | No | Sending email through Gmail, with an app password. Without them, emails are skipped |
+| `BETTER_AUTH_URL` | Yes | The app's public URL, used in the sitemap and canonical links |
+| `JAC_WEB_LISTEN`, `JAC_WEB_DATA` | No | The address to listen on (default `127.0.0.1:8000`) and where accounts, watchlists and alerts are kept |
+| `NEXT_PUBLIC_OPENSTOCK_DATA_MODE` | No | `cached` (hourly, the default) or `realtime` (every 15 seconds, with price alerts). Read when the app starts |
+| `NODEMAILER_EMAIL`, `NODEMAILER_PASSWORD` | No | Welcome and alert emails through Gmail, with an app password. Without them, those emails are skipped |
+| `JAC_AUTH_ORIGIN`, `JAC_MAIL_HOST`, `JAC_MAIL_SENDER`, `JAC_MAIL_USER`, `SMTP_PASSWORD` | No | Password-reset links, mailed over any SMTP server. Without them, no reset links are mailed |
 | `GEMINI_API_KEY` (or MiniMax or Siray) | No | AI-written welcome emails and the news digest |
 | `ADANOS_API_KEY` | No | The sentiment card on stock pages |
 | `ALPHAI_API_KEY` | No | The scored news card on stock pages |
 | `KIT_API_KEY`, `KIT_API_SECRET`, `KIT_WELCOME_FORM_ID` | No | The weekly digest newsletter in Kit |
-| `GOOGLE_CLIENT_ID` / `_SECRET`, `GITHUB_CLIENT_ID` / `_SECRET` | No | Social sign-in. Callbacks: `<BETTER_AUTH_URL>/api/auth/callback/google` and `/github` |
+| `SSO_GITHUB_CLIENT_ID` / `_SECRET`, `SSO_GOOGLE_CLIENT_ID` / `_SECRET` | No | Social sign-in. Callbacks: `<JAC_AUTH_ORIGIN>/__jac/auth/github` and `/google` |
 
 `NEXT_PUBLIC_FINNHUB_API_KEY` still works as a name for the Finnhub key. No key is ever sent to the browser.
 
@@ -181,93 +176,57 @@ Every variable is listed with comments in [`.env.example`](.env.example). The on
 
 ### Docker Compose <a name="docker-setup"></a>
 
-Runs OpenStock and MongoDB together. MongoDB is only reachable inside the Docker network; it isn't published on your machine.
-
-1. Fill in `.env` (see above). For the bundled database, choose a password and use it in both places. Letters and digits are simplest; `@ : / ? #` must be percent-encoded in the URI.
-   ```env
-   MONGO_ROOT_PASSWORD=change-me
-   MONGODB_URI=mongodb://root:change-me@mongodb:27017/openstock?authSource=admin
-   ```
+1. Fill in `.env` (see above).
 2. Start it: `docker compose up -d --build`
 3. Open http://localhost:3000
 
-The image build needs no secrets: every variable is read when the container starts, except `NEXT_PUBLIC_OPENSTOCK_DATA_MODE`, which Compose passes to the build from `.env`. Data lives in the `mongo-data` volume, and the MongoDB password is only applied when that volume is first created.
+The image build needs no secrets: every variable is read when the container starts. Accounts, watchlists and alerts live in the `openstock-data` volume; there is no database container.
 
 ### Prebuilt image
 
-Every push to `main` publishes `ghcr.io/open-dev-society/openstock` for amd64 and arm64, tagged `latest`, `sha-<commit>`, and a version for each release (for example `2026.10.18`). To use it, replace `build:` under `openstock` in `docker-compose.yml` with:
+Every push to `main` publishes `ghcr.io/open-dev-society/openstock`, tagged `latest`, `sha-<commit>`, and a version for each release (for example `2026.10.18`). To use it, replace `build: .` under `openstock` in `docker-compose.yml` with:
 
 ```yaml
     image: ghcr.io/open-dev-society/openstock:latest
 ```
 
-then run `docker compose pull && docker compose up -d`. The prebuilt image runs in cached mode; build it yourself for realtime.
-
-### One-click deploys
-
-[![Deploy on RepoCloud](https://d16t0pc4846x52.cloudfront.net/deploylobe.svg)](https://repocloud.io/details/OpenStock/)
-[![Deploy to ZopDay](https://zop.dev/deploytozopday-inkhard.svg)](https://zop.dev/zopday/app/deploy?repo=https://github.com/Open-Dev-Society/OpenStock&port=3000&name=openstock&utm_source=github&utm_medium=one_click&utm_content=openstock)
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/openstock-1?utm_medium=integration&utm_source=template&utm_campaign=generic)
+then run `docker compose pull && docker compose up -d`.
 
 ### Railway <a name="deploy-on-railway"></a>
 
-OpenStock ships a [`railway.json`](railway.json) that builds the `Dockerfile`, checks health on `/sign-in` and restarts on failure. The template above sets everything up; to do it by hand:
+OpenStock ships a [`railway.json`](railway.json) that builds the `Dockerfile`, checks health on `/sign-in` and restarts on failure.
 
-1. Create a project and add a **MongoDB** database (`+ New → Database → MongoDB`).
-2. Add a service from this repository (`+ New → GitHub Repo`).
-3. In the service's **Variables**, set:
+1. Add a service from this repository (`+ New → GitHub Repo`) and attach a volume mounted at `/data`.
+2. In the service's **Variables**, set:
    ```env
-   MONGODB_URI=${{MongoDB.MONGO_URL}}
-   BETTER_AUTH_SECRET=${{secret(32)}}
    BETTER_AUTH_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}
+   JAC_AUTH_ORIGIN=https://${{RAILWAY_PUBLIC_DOMAIN}}
    FINNHUB_API_KEY=your_finnhub_key
    GEMINI_API_KEY=your_gemini_api_key
-   INNGEST_SIGNING_KEY=your_inngest_signing_key
-   INNGEST_EVENT_KEY=your_inngest_event_key
    NODEMAILER_EMAIL=youraddress@gmail.com
    NODEMAILER_PASSWORD=your_gmail_app_password
    ```
-4. Under **Settings → Networking**, generate a public domain and redeploy.
+3. Under **Settings → Networking**, generate a public domain for port 3000 and redeploy.
 
-For background jobs, add your Railway domain as an app in the [Inngest dashboard](https://app.inngest.com), pointing to `https://<your-domain>/api/inngest`. To turn on realtime mode, also set `NEXT_PUBLIC_OPENSTOCK_DATA_MODE=realtime`; Railway passes it to the build.
-
-### Cloudflare Workers (experimental)
-
-OpenStock can also run on [Cloudflare Workers](https://developers.cloudflare.com/workers/) through [vinext](https://github.com/cloudflare/vinext). The hosted site still runs on Vercel; Workers is for self-hosters who want it.
-
-1. Set the runtime variables as Worker secrets (`npx wrangler secret put MONGODB_URI`, and the same for `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `FINNHUB_API_KEY`, the email, Inngest and AI keys). `BETTER_AUTH_URL` is your Worker's URL. `NEXT_PUBLIC_*` values are read at build time, so set them before building.
-2. Allow Cloudflare's addresses in your database's network access (on Atlas, `0.0.0.0/0` with a strong password).
-3. Add `https://<your-worker>/api/auth/callback/google` and `.../github` to your OAuth apps if you use social sign-in, and point Inngest at `https://<your-worker>/api/inngest`.
-4. Build and deploy: `npm run build:vinext && npm run deploy:vinext`. `npm run dev:vinext` runs it locally on port 3001.
-
-Each request on Workers opens its own MongoDB connection and closes it when the response is done; Node, Docker and Vercel keep one shared connection.
-
-### Vercel
-
-Import the repository, set the variables above for Production, and connect Inngest (its Vercel integration sets both keys). [`vercel.json`](vercel.json) pins functions to Mumbai (`bom1`), next to the hosted database; change it to the region nearest yours.
+To turn on realtime mode, also set `NEXT_PUBLIC_OPENSTOCK_DATA_MODE=realtime`.
 
 ## 🧱 Project structure <a name="project-structure"></a>
 
 ```
-app/
-  (marketing)/    public pages: landing, about, help, api-docs, sponsor, love, changelog, terms, /s/[ticker], /compare
-  (auth)/         sign-in, sign-up, forgot-password, reset-password
-  (root)/         the signed-in app: dashboard, watchlist, stocks/[symbol], profile
-  api/            auth/[...all] (Better Auth), inngest (background jobs), quotes (live prices)
-components/       shell/ (sidebar, tabs), stocks/, watchlist/, landing/, marketing/, sponsors/, forms/, ui/ (shadcn)
-database/         MongoDB connection and models (watchlist, named lists, alert)
-lib/
-  actions/        server actions: auth, profile, watchlist, named lists, alerts, Finnhub, Yahoo, sentiment, scored news
-  better-auth/    auth setup (connects to MongoDB on first use, so builds need no database)
-  inngest/        background jobs and AI prompts
-  nodemailer/     email sending and templates
-  markets.ts      the dashboard's markets            market-data.ts   cached vs realtime
-  changelog.ts    releases and contributor credits   sponsors.ts      sponsors and tiers
-  rate-limit.ts   MongoDB-backed limits for auth and live quotes
-i18n/, messages/  next-intl setup and the English, Polish and Arabic strings
-middleware.ts     public marketing, /s and /compare pages; app pages redirect to sign-in
-scripts/          check-env.mjs, test-db.mjs, and one-off maintenance scripts
-__tests__/        Vitest tests
+archwire.jac      the app: a native server space (api/), a browser space (pages/, ui/), and what each module imports
+jac.toml          project settings and the pages' npm packages
+api/              the server: markets, quotes, portfolio (watchlist, named lists, alerts), jobs (welcome email,
+                  alert checker, weekly digest), mail, insights (sentiment, scored news), ai, kit, seo, account
+pages/            one file per route: landing, about, help, api-docs, sponsor, love, changelog, terms, s/, compare/,
+                  sign-in, sign-up, forgot-password, reset-password, dashboard, watchlist, stocks, profile
+ui/               components: shell (sidebar, tabs, search), market (TradingView, pulse tiles), forms, kit, i18n, site
+model.jac, insight_model.jac, rules.jac, content/
+                  types, pure helpers and content (changelog, sponsors, comparison guides) shared by server and pages
+messages/         the English, Polish and Arabic strings
+data/             the US ticker index behind /s
+tools/            check_env.jac, build_tickers.jac
+styles/, eco/web/ the style sheet, the HTML shell, Vite configuration and static assets
+*.test.jac        tests, beside the modules they test
 ```
 
 ## 📡 How it works <a name="data--integrations"></a>
@@ -277,8 +236,8 @@ __tests__/        Vitest tests
 - **Yahoo Finance**: delayed quotes for Saudi Arabia and Poland on the dashboard, stock pages and watchlist.
 - **Adanos** (optional): the sentiment card.
 - **AlphAI** (optional): the scored news card.
-- **Better Auth with MongoDB**: accounts and sessions. Pages and server actions check the session on the server; the middleware only redirects signed-out visitors.
-- **Inngest** runs the background jobs:
+- **Accounts and data**: neojac's accounts plugin signs people in, and each account's watchlist, lists, alerts and profile hang off its own root in the app's kept graph. Server functions tagged `:protect` only run for a signed-in caller.
+- **Background jobs** are scheduled functions in `api/jobs.jac`:
 
   | Job | When |
   |---|---|
@@ -286,7 +245,7 @@ __tests__/        Vitest tests
   | Price alert check | Every 5 minutes, in realtime mode |
   | Weekly news digest (a Kit broadcast) | Mondays at 09:00 UTC |
 
-- **Email**: Nodemailer (Gmail) sends welcome, alert and password-reset emails; Kit sends the weekly digest.
+- **Email**: SMTP (Gmail) sends welcome and alert emails; the accounts plugin mails password-reset links; Kit sends the weekly digest.
 
 ## 🌍 Market support <a name="market-support"></a>
 
@@ -307,22 +266,21 @@ The full table, and why some markets are limited, is in [MARKET_SUPPORT.md](MARK
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | Development server (Turbopack) |
-| `npm run build`, `npm start` | Production build and server |
-| `npm test` | Vitest tests (`npm run test:watch` to keep watching) |
-| `npm run lint` | ESLint |
-| `npx tsc --noEmit` | Type check. Builds skip type errors, so run this before opening a PR |
-| `npm run test:db` | Checks the MongoDB connection |
-| `node scripts/check-env.mjs` | Checks your `.env` |
+| `neojac dev web` | Runs the app and rebuilds as you edit |
+| `neojac build web`, `neojac run web` | Production build, and build then run |
+| `neojac check web` | Checks the whole app: syntax, names, types, wires. Run it before opening a PR |
+| `neojac test` | The tests (`neojac test api/quotes.jac` for one module) |
+| `neojac fmt .` | Formats the Jac source |
+| `neojac run tools/check_env.jac` | Checks your `.env` |
 
 ## 🤝 Contributing <a name="contributing"></a>
 
 You belong here. Whether you're a student, a self-taught dev or a seasoned engineer, contributions are welcome.
 
 1. Pick a [good first issue](https://github.com/Open-Dev-Society/OpenStock/issues?q=is%3Aopen+label%3A%22good+first+issue%22), or open an issue to talk about an idea or a bug first.
-2. Fork the repo, branch from `main`, then `npm ci` and `cp .env.example .env`.
+2. Fork the repo, branch from `main`, then `neojac install` and `cp .env.example .env`.
 3. Keep the pull request focused: a test for new logic, a screenshot for UI changes.
-4. Before you open it, run `npm test`, `npx tsc --noEmit` and `npm run lint`.
+4. Before you open it, run `neojac check web`, `neojac test` and `neojac fmt --check .`.
 
 Every merged pull request, and every issue that leads to a fix, is credited on the [changelog](https://openstock-ods.vercel.app/changelog) and below. Be kind, guide beginners, no gatekeeping: that's the Open Dev Society way. Participation is covered by the [Code of Conduct](CODE_OF_CONDUCT.md).
 
@@ -433,7 +391,7 @@ Because the future belongs to those who build it openly.
 - [Finnhub](https://finnhub.io) for accessible market data, and [TradingView](https://www.tradingview.com) for embeddable charts and widgets
 - [Adanos](https://adanos.org) for sentiment data
 - [AlphAI](https://alphai.io) for scored financial news
-- shadcn/ui, Radix UI, Tailwind CSS and the Next.js community
+- Tailwind CSS, React, and neojac, the Jac compiler OpenStock is built with
 - [Inngest](https://www.inngest.com) for dependable background jobs, and [Better Auth](https://www.better-auth.com) for simple, secure authentication
 - [Adrian Hajdin (JavaScript Mastery)](https://github.com/adrianhajdin), whose [Stock Market App tutorial](https://www.youtube.com/watch?v=gu4pafNCXng) was where OpenStock started
 
