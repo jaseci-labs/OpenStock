@@ -1,5 +1,3 @@
-const KIT_API_URL = 'https://api.kit.com/v4';
-
 interface KitConfig {
     apiKey: string;
     apiSecret: string;
@@ -88,7 +86,7 @@ export const kit = {
                 throw new Error(JSON.stringify(error));
             }
             return await response.json();
-        } catch (error: any) {
+        } catch (error) {
             console.error("Kit API Error (sendBroadcast):", error);
             throw error;
         }
@@ -98,7 +96,7 @@ export const kit = {
      * List subscribers from Kit (for verification/logging)
      */
     listSubscribers: async () => {
-        const { apiKey, apiSecret } = getConfig();
+        const { apiSecret } = getConfig();
         try {
             const response = await fetch(`https://api.convertkit.com/v3/subscribers?api_secret=${apiSecret}`, {
                 method: 'GET',

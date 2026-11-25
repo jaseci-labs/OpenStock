@@ -102,14 +102,6 @@ const state = {
     optionalPresent: [],
 };
 
-// Helper to classify a variable
-function classifyVar(key) {
-    if (requiredVars[key] !== undefined) return 'required';
-    if (optionalVars[key] !== undefined) return 'optional';
-    if (deprecatedVars[key] !== undefined) return 'deprecated';
-    return 'unknown';
-}
-
 // =============================================
 // MASKING HELPER
 // =============================================
@@ -143,7 +135,7 @@ for (const [key, description] of Object.entries(requiredVars)) {
             key,
             description,
             severity: 'critical',
-            hint: getHint(key, 'required'),
+            hint: getHint(key),
         });
     } else {
         state.present.push({
@@ -192,7 +184,7 @@ for (const [key, description] of Object.entries(optionalVars)) {
 // =============================================
 
 // Helper function to get hint for missing vars
-function getHint(key, type) {
+function getHint(key) {
     const hints = {
         'MONGODB_URI': 'Use Atlas URI (mongodb+srv://...) or Docker connection string',
         'BETTER_AUTH_SECRET': 'Generate with: openssl rand -hex 32',
@@ -220,7 +212,7 @@ if (state.present.length === 0) {
 if (state.missing.length > 0) {
     console.log('\n❌ Missing Required Variables:');
     console.log('-'.repeat(70));
-    state.missing.forEach(({ key, description, severity, hint }) => {
+    state.missing.forEach(({ key, description, hint }) => {
         console.log(`  ✗ ${key}`);
         console.log(`    ${description}`);
         console.log(`    ⚠ ${hint}`);

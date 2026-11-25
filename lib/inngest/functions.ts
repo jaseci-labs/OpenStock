@@ -2,10 +2,7 @@ import { NonRetriableError } from "inngest";
 import mongoose from "mongoose";
 import { inngest } from "@/lib/inngest/client";
 import { NEWS_SUMMARY_EMAIL_PROMPT, PERSONALIZED_WELCOME_EMAIL_PROMPT } from "@/lib/inngest/prompts";
-import { sendNewsSummaryEmail, sendStockAlertEmail, sendWelcomeEmail } from "@/lib/nodemailer";
-import { getAllUsersForNewsEmail, getWatchlistSymbolsByEmail } from "@/lib/actions/user.actions";
-import { getNews } from "@/lib/actions/finnhub.actions";
-import { getFormattedTodayDate } from "@/lib/utils";
+import { sendStockAlertEmail, sendWelcomeEmail } from "@/lib/nodemailer";
 import { callAIProviderWithFallback } from "@/lib/ai-provider";
 import { getEmailTranslator } from "@/lib/nodemailer/i18n";
 
@@ -60,7 +57,6 @@ export const sendSignUpEmail = inngest.createFunction(
     }
 )
 
-// Rename to Weekly
 export const sendWeeklyNewsSummary = inngest.createFunction(
     { id: 'weekly-news-summary', triggers: [{ event: 'app/send.weekly.news' }, { cron: '0 9 * * 1' }] }, // Every Monday at 9AM
     async ({ step }) => {
@@ -114,8 +110,6 @@ export const sendWeeklyNewsSummary = inngest.createFunction(
 
             // --- HTML EMAIL TEMPLATE ---
             // Using inline styles for compatibility. Accent Color: Teal (#20c997)
-            const logoUrl = "https://raw.githubusercontent.com/ravixalgorithm/OpenStock/main/public/assets/images/logo.png";
-
             const content = `
             <!DOCTYPE html>
             <html>
@@ -356,7 +350,7 @@ export const checkStockAlertsHandler = async ({ step }: { step: { run: <T>(id: s
                 // Per-alert try/catch: a failure releases the claim so the next 5-min run retries it,
                 // and never throws the step (a step retry would re-email alerts already sent in this loop).
                 try {
-                    // Better Auth users may be keyed by `id` or `_id` (see getWatchlistSymbolsByEmail)
+                    // Better Auth users may be keyed by `id` or `_id`
                     const user = await db.collection('user').findOne<{ email?: string }>(
                         mongoose.isValidObjectId(alert.userId)
                             ? { $or: [{ id: alert.userId }, { _id: new mongoose.Types.ObjectId(alert.userId) }] }

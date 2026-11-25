@@ -3,14 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // The 5-minute alert checker, run with a plain step runner: which alerts fire, which only move their saved side.
 
 vi.mock('@/lib/inngest/client', () => ({ inngest: { createFunction: (_config: unknown, handler: unknown) => handler } }));
-vi.mock('@/lib/actions/user.actions', () => ({ getAllUsersForNewsEmail: vi.fn(), getWatchlistSymbolsByEmail: vi.fn() }));
 vi.mock('@/lib/ai-provider', () => ({ callAIProviderWithFallback: vi.fn() }));
 vi.mock('@/database/mongoose', () => ({ connectToDatabase: vi.fn().mockResolvedValue({ connection: { db: { collection: () => ({ findOne: async () => ({ email: 'owner@example.test' }) }) } } }) }));
 
 const sendStockAlertEmail = vi.fn();
 vi.mock('@/lib/nodemailer', () => ({
     sendStockAlertEmail: (...args: unknown[]) => sendStockAlertEmail(...args),
-    sendNewsSummaryEmail: vi.fn(),
     sendWelcomeEmail: vi.fn(),
 }));
 
