@@ -1,0 +1,7 @@
+node_modules
+.jac
+dist
+legacy
+.git
+.idea
+.env*

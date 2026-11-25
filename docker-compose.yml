@@ -1,0 +1,14 @@
+services:
+  openstock:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      # Accounts, watchlists and alerts: the app keeps its own data, so there is no database service
+      - openstock-data:/data
+
+volumes:
+  openstock-data:
