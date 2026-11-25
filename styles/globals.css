@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* The pages are Jac, outside the bundler's root: tell Tailwind where the class names are */
+@source "../pages";
+@source "../ui";
+@source "../web.jac";
+
 @custom-variant dark (&:is(.dark *));
 
 /*
