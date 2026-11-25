@@ -26,15 +26,9 @@ def area(path: str) -> str {
     return "app" if first in APP else ("auth" if first in AUTH else "site");
 }
 
-# SLOT for the search server function: rows of {"symbol", "name", "exchange", "type"}, the popular stocks for ""
-async def search_stocks(query: str) -> list[dict[str, any]] {
-    return [];
-}
-
-# SLOT for the watchlist server function: the caller's starred stocks as {"symbol", "company"}.
-# A page that changes the watchlist dispatches the window event "watchlistchange".
+# The sidebar's stocks. Whatever changes the watchlist dispatches the window event "watchlistchange".
 async def starred -> list[dict[str, str]] {
-    return [];
+    return [{"symbol": w.symbol, "company": w.company} for w in await get_watchlist()];
 }
 
 def:pub layout -> JsxLayout {
@@ -91,7 +85,7 @@ def:pub layout -> JsxLayout {
     if kind == "auth" {
         return <AuthLayout><Outlet /></AuthLayout>;
     }
-    return <AppShell user={who} {watchlist} palette={<SearchCommand search={search_stocks} />}>
+    return <AppShell user={who} {watchlist} palette={<SearchCommand />}>
         {<Outlet /> if who else <Loading />}
     </AppShell>;
 }

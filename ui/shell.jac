@@ -53,17 +53,14 @@ def:pub open_donate {
     window.dispatchEvent(new(Event, "open-donate-popup"));
 }
 
-# The stock palette (⌘K). `search` is given the typed text ("" for the popular stocks) and gives
-# rows of {"symbol", "name", "exchange", "type"}; `addToList(listId, symbol, name)` gives "" or what went wrong.
-def:pub SearchCommand(
-    search: Callable[[str], Coroutine[any, any, list[dict[str, any]]]],
-    addToList: Callable[[str, str, str], Coroutine[any, any, str]] | None = None,
-) -> JsxElement {
+# The stock palette (⌘K): the popular stocks until something is typed, then the server's matches. Opened for
+# a named list (open_search_for_list), each result files into that list instead.
+def:pub SearchCommand -> JsxElement {
     has open: bool = False;
     has term: str = "";
     has loading: bool = False;
-    has popular: list[dict[str, any]] = [];
-    has found: list[dict[str, any]] = [];
+    has popular: list[Stock] = [];
+    has found: list[Stock] = [];
     has target: dict[str, str] = {};
     has adding: str = "";
     has timer: Ref[any] = Ref(None);
@@ -93,7 +90,7 @@ def:pub SearchCommand(
         };
         window.addEventListener("keydown", on_event.current);
         window.addEventListener("open-search", on_event.current);
-        popular = await search("");
+        popular = await search_stocks("");
     }
 
     can with exit {
@@ -103,7 +100,7 @@ def:pub SearchCommand(
 
     async def run(text: str) {
         try {
-            found = await search(text);
+            found = await search_stocks(text);
         } except Exception {
             found = [];
         }
@@ -119,26 +116,27 @@ def:pub SearchCommand(
         }
     }
 
-    async def add(stock: dict[str, any]) {
-        if adding or addToList is None {
+    async def add(stock: Stock) {
+        if adding {
             return;
         }
-        adding = stock["symbol"];
-        problem = await addToList(target["id"], stock["symbol"], stock["name"]);
-        if problem {
-            toast_error(problem);
+        adding = stock.symbol;
+        refused = problem((await add_to_list(target["id"], stock.symbol, stock.name)).error);
+        if refused {
+            toast_error(refused);
         } else {
             # The palette stays open so several stocks can be filed in one go
             toast_ok(
-                t("SearchCommand.addedToList", {"symbol": stock["symbol"], "list": target["name"]})
+                t("SearchCommand.addedToList", {"symbol": stock.symbol, "list": target["name"]})
             );
+            changed();
         }
         adding = "";
     }
 
     # In list mode the row files the stock instead of navigating: the prompt says "add", and the
     # row is the biggest target. A modified click is still a request to open the stock.
-    def picked(e: any, stock: dict[str, any]) -> any {
+    def picked(e: any, stock: Stock) -> any {
         if not target {
             close();
         } elif not (e.metaKey or e.ctrlKey or e.shiftKey) {
@@ -194,24 +192,24 @@ def:pub SearchCommand(
                         </li>
                         {[
                             <li
-                                key={stock["symbol"]}
+                                key={stock.symbol}
                                 className={cx("search-item", target and "flex items-center gap-1 pe-2")}
                             >
                                 <Link
-                                    to={f"/stocks/{stock['symbol']}"}
+                                    to={f"/stocks/{stock.symbol}"}
                                     onClick={lambda (e: any) -> any { picked(e, stock) }}
                                     className={cx("search-item-link group", target and "min-w-0 flex-1")}
                                 >
                                     <span
                                         className="mono w-20 shrink-0 truncate text-[13px] font-semibold text-brand-ink"
-                                    >{stock["symbol"]}</span>
-                                    <span className="search-item-name flex-1">{stock["name"]}</span>
+                                    >{stock.symbol}</span>
+                                    <span className="search-item-name flex-1">{stock.name}</span>
                                     <span
                                         className="hidden max-w-40 truncate text-xs text-faint sm:block"
                                     >
                                         {" · ".join([
                                             str(x)
-                                            for x in [stock.get("exchange"), stock.get("type")]
+                                            for x in [stock.exchange, stock.kind]
                                             if x
                                         ])}
                                     </span>
@@ -224,10 +222,10 @@ def:pub SearchCommand(
                                     onClick={lambda { add(stock) }}
                                     disabled={adding != ""}
                                     className="pill h-7 shrink-0"
-                                    title={t("SearchCommand.addTitle", {"symbol": stock["symbol"], "list": target["name"]})}
+                                    title={t("SearchCommand.addTitle", {"symbol": stock.symbol, "list": target["name"]})}
                                 ><Plus className="size-3.5" /> {t(
                                     "SearchCommand.adding"
-                                        if adding == stock["symbol"]
+                                        if adding == stock.symbol
                                         else "SearchCommand.add",
                                 )}</button>
                                     if target

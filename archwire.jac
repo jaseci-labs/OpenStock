@@ -28,7 +28,23 @@ graph import {
     model ++> api.markets { Market, Pulse, Group, Clock, MarketSession, session_of }
     api.fetch ++> api.insights | api.ai | api.kit { request_json }
     insight_model ++> api.insights { SourceInsight, StockSentiment, NewsItem, TickerNews }
-    model ++> api.portfolio { Quote, Closes, WatchItem, ListSummary, AlertInfo, Saved, MAX_WATCHLIST, MAX_LISTS, MAX_LIST_SYMBOLS, MAX_LIST_NAME, MAX_ACTIVE_ALERTS, has_finnhub_quotes, is_sma_period, sma, side_of }
+    model ++> api.portfolio {
+        Quote,
+        Closes,
+        WatchItem,
+        ListSummary,
+        AlertInfo,
+        Saved,
+        MAX_WATCHLIST,
+        MAX_LISTS,
+        MAX_LIST_SYMBOLS,
+        MAX_LIST_NAME,
+        MAX_ACTIVE_ALERTS,
+        has_finnhub_quotes,
+        is_sma_period,
+        sma,
+        side_of,
+    }
     api.quotes ++> api.portfolio { get_quote, daily_closes, is_realtime }
     model ++> api.jobs { Quote, Closes, sma, side_of, has_crossed }
     api.quotes ++> api.jobs { get_quote, daily_closes, is_realtime, get_news }
@@ -237,4 +253,116 @@ graph import {
     model ++> pages.s.index { tradingview_symbol, tradingview_symbol_url }
     api.seo ++> pages.s.index { ticker_page, edgar_company }
     ui.shell ++> pages.layout { AppShell, AuthLayout, SearchCommand }
+    fmt ++> ui.stocks { money, signed, poll_ms }
+    model ++> ui.stocks {
+        Quote,
+        ListSummary,
+        AlertInfo,
+        MAX_WATCHLIST,
+        MAX_LISTS,
+        MAX_LIST_SYMBOLS,
+        SMA_PERIODS,
+    }
+    api.quotes ++> ui.stocks { quotes, data_mode }
+    api.portfolio ++> ui.stocks {
+        add_to_watchlist,
+        remove_from_watchlist,
+        create_alert,
+        get_lists,
+        add_to_list,
+        create_list,
+    }
+    ui.i18n ++> ui.stocks { t, locale }
+    ui.kit ++> ui.stocks { cx, Dialog, toast_error, toast_ok }
+    ui.i18n ++> "pages/sign-up" { locale }
+    api.quotes ++> ui.shell { search_stocks }
+    api.portfolio ++> pages.layout { get_watchlist }
+    api.portfolio ++> ui.shell { add_to_list }
+    model ++> ui.shell { Stock }
+    ui.stocks ++> ui.shell { problem, changed }
+    ui.i18n ++> pages.dashboard | pages.watchlist | pages.stocks { t, locale }
+    ui.i18n ++> pages.profile { t }
+    ui.i18n ++> pages.dashboard | pages.stocks { message_key }
+    ui.i18n ++> pages.watchlist | pages.stocks { rich }
+    ui.kit ++> pages.dashboard { cx, Panel, ChangePill, DataFreshness, Loading }
+    ui.kit ++> pages.watchlist {
+        cx,
+        Panel,
+        ChangePill,
+        PriceFlash,
+        DataFreshness,
+        Loading,
+        toast_error,
+        toast_ok,
+    }
+    ui.kit ++> pages.stocks { cx, Panel, Menu, MenuItem, ChangePill, PriceFlash, DataFreshness }
+    ui.kit ++> pages.profile { Panel, toast_error, toast_ok }
+    ui.session ++> pages.dashboard { me }
+    ui.session ++> pages.profile { me, load_user, auth_post }
+    ui.forms ++> pages.profile { Field, SubmitButton, ChoiceChips, CountrySelect }
+    ui.shell ++> pages.dashboard { MarketSwitcher }
+    ui.shell ++> pages.watchlist { open_search, open_search_for_list }
+    ui.market ++> pages.dashboard { TradingView, IndexPulse, widget_config }
+    ui.market ++> pages.stocks { TradingView, symbol_info, candle_chart, widget_config }
+    ui.stocks ++> pages.watchlist {
+        use_live,
+        Empty,
+        WatchButton,
+        AlertButton,
+        ListButton,
+        problem,
+        changed,
+        ago,
+        NAME_INPUT,
+    }
+    ui.stocks ++> pages.stocks { use_live, Empty, WatchButton, AlertButton, ListButton, ago }
+    fmt ++> pages.dashboard { grouped }
+    fmt ++> pages.watchlist | pages.stocks { money, signed, compact }
+    model ++> pages.dashboard { Market, DailyQuote, yahoo_app_symbol }
+    model ++> pages.watchlist {
+        Quote,
+        WatchlistRow,
+        Article,
+        WatchItem,
+        ListSummary,
+        AlertInfo,
+        Saved,
+        has_finnhub_quotes,
+    }
+    model ++> pages.stocks {
+        Quote,
+        DailyQuote,
+        Profile,
+        tradingview_symbol,
+        is_chart_embeddable,
+        tradingview_symbol_url,
+        qualify_tradingview_symbol,
+        has_finnhub_quotes,
+        has_finnhub_company_data,
+        is_yahoo_symbol,
+    }
+    insight_model ++> pages.stocks { StockSentiment, TickerNews, alphai_stock_url }
+    api.markets ++> pages.dashboard { markets, open_markets, market_for_country }
+    api.quotes ++> pages.dashboard { yahoo_daily_quotes, is_realtime }
+    api.quotes ++> pages.watchlist { get_watchlist_data, get_news }
+    api.quotes ++> pages.stocks {
+        get_company_profile,
+        get_stock_metrics,
+        get_tradingview_exchange,
+        yahoo_daily_quotes,
+    }
+    api.quotes ++> pages.profile { is_realtime }
+    api.insights ++> pages.stocks { get_stock_sentiment, get_alphai_news }
+    api.portfolio ++> pages.watchlist {
+        get_watchlist,
+        get_lists,
+        get_alerts,
+        create_list,
+        delete_list,
+        remove_from_list,
+        delete_alert,
+    }
+    api.portfolio ++> pages.stocks { in_watchlist }
+    api.portfolio ++> pages.profile { get_watchlist, get_alerts }
+    api.account ++> pages.profile { update_profile }
 }

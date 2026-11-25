@@ -245,8 +245,8 @@ def alert_error(symbol: str, condition: str, price: float, is_sma: bool, period:
             else "conditionInvalid"
                 if condition not in ["ABOVE", "BELOW"]
                 else "marketUnsupported"
-                    if not has_finnhub_quotes(symbol)  # The alert checker prices symbols through Finnhub, whose free plan covers US stocks and crypto
-                    else "priceInvalid"
+                    if not has_finnhub_quotes(symbol)
+                    else "priceInvalid"  # The alert checker prices symbols through Finnhub, whose free plan covers US stocks and crypto
                         if not is_sma and not 0 < price < float("inf")
                         else "periodInvalid"
                             if is_sma and not is_sma_period(period)

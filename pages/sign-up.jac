@@ -28,7 +28,7 @@ def:pub page -> JsxPage {
             "register", {"username": username_for(address), "email": address, "password": password}
         );
         if problem == "" {
-            refused = await save_profile(name, address, country, goal, risk, industry);
+            refused = await save_profile(name, address, country, goal, risk, industry, locale());
             problem = t(f"Errors.{refused}") if refused else "";
         }
         busy = False;

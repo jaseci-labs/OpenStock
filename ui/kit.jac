@@ -80,7 +80,7 @@ def:pub Dialog(
     );
 }
 
-# A button that opens a panel beside itself: a dropdown menu, or any popover. A click on anything
+# A button that opens a panel beside itself (from its end edge with `end`): a dropdown menu, or any popover. A click on anything
 # inside marked `data-close` (every MenuItem, unless keepOpen) closes it, as do Escape and a click outside.
 def:pub Menu(
     trigger: any,
@@ -88,6 +88,7 @@ def:pub Menu(
     className: str = "",
     panelClassName: str = "",
     up: bool = False,
+    end: bool = False,
     **rest: any,
 ) -> JsxElement {
     has open: bool = False;
@@ -128,7 +129,7 @@ def:pub Menu(
                     open = False;
                 }
             }}
-            className={cx("bg-popover text-popover-foreground animate-in fade-in-0 zoom-in-95 absolute start-0 z-50 max-h-80 min-w-[8rem] overflow-y-auto rounded-md border p-1 shadow-md", "bottom-full mb-1" if up else "top-full mt-1", panelClassName)}
+            className={cx("bg-popover text-popover-foreground animate-in fade-in-0 zoom-in-95 absolute z-50 max-h-80 min-w-[8rem] overflow-y-auto rounded-md border p-1 shadow-md", "bottom-full mb-1" if up else "top-full mt-1", "end-0" if end else "start-0", panelClassName)}
         >{children}</div>
             if open
             else None}
