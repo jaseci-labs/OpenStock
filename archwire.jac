@@ -78,4 +78,11 @@ graph import {
     ui.site ++> "pages/api-docs" { PageHero, SectionHead, IconCard, REPO_URL, LATEST_RELEASE }
     ui.site ++> pages.love { PageHero, SectionHead, SponsorLink, REPO_URL, SPONSOR_TIERS, ACTIVE_SPONSORS, PREVIOUS_SPONSORS, PREVIOUS_SUPPORTERS }
     ui.shell ++> pages.layout { AppShell, AuthLayout, SearchCommand }
+    fmt ++> ui.stocks { money, signed, poll_ms }
+    model ++> ui.stocks { Quote, ListSummary, AlertInfo, Saved, MAX_WATCHLIST, MAX_LISTS, MAX_LIST_SYMBOLS, SMA_PERIODS }
+    api.quotes ++> ui.stocks { quotes, data_mode }
+    api.portfolio ++> ui.stocks { add_to_watchlist, remove_from_watchlist, create_alert, get_lists, add_to_list, create_list }
+    ui.i18n ++> ui.tv | ui.stocks { t, locale }
+    ui.kit ++> ui.tv { cx }
+    ui.kit ++> ui.stocks { cx, Dialog, toast_error, toast_ok }
 }
