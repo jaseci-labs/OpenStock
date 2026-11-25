@@ -232,11 +232,12 @@ graph import {
         tier_border,
         tier_name,
     }
-    ui.site ++> pages.changelog { PageHero, SectionHead, Go, CTA, CTA_GHOST }
+    ui.site ++> pages.changelog { PageHero, Go, CTA, CTA_GHOST, Band, Hatch, LINK }
     content.site ++> pages.changelog { REPO_URL, GOOD_FIRST_ISSUES_URL }
     content.changelog ++> pages.changelog {
         Credit,
         Release,
+        Section,
         RELEASES,
         MAINTAINER,
         contributors,
