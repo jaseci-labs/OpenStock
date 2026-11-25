@@ -1,11 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>OpenStock</title>
+        <meta
+            name="description"
+            content="OpenStock is an open-source alternative to expensive market platforms. Track nine markets, keep watchlists, and explore detailed company insights — built openly, for everyone, forever free."
+        />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@200..800&display=swap"
+        />
+        <!-- The names styles/globals.css reads its faces by -->
+        <style>
+            :root {
+                --font-jakarta: "Plus Jakarta Sans", system-ui, sans-serif;
+                --font-plex-mono: "IBM Plex Mono";
+                --font-arabic: "IBM Plex Sans Arabic";
+            }
+        </style>
     </head>
-    <body>
+    <body class="font-sans antialiased">
         <div id="root"></div>
         <script type="module" src="/@jac/entry"></script>
     </body>

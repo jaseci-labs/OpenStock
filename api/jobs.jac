@@ -85,18 +85,11 @@ def welcome_quietly(
     }
 }
 
-"""Called at sign-up, for the new caller: notes where their alerts go, then sends the welcome email beside the call,
-so a slow AI or mail server never holds sign-up up or fails it."""
+"""Called at sign-up: sends the welcome email beside the call, so a slow AI or mail server never holds sign-up up or
+fails it."""
 def send_welcome(
     email: str, name: str, country: str, goals: str, risk: str, industry: str, locale: str
 ) {
-    try {
-        remember_owner(email, name, locale);
-    } except RuntimeError {
-        log(
-            f"send_welcome ran for no caller: {email} gets no alert emails until remember_owner is called",
-        );
-    }
     flow welcome_quietly(email, name, country, goals, risk, industry, locale);
 }
 
@@ -153,7 +146,7 @@ def fire(owner_root: Root, a: Alert, price: float, average: float | None) {
     (a.triggered, a.active) = (True, False);
     a.target_price = a.target_price if average is None else average;
     commit();
-    owners = [o for o in [owner_root --> [?:Owner]] if o.email];
+    owners = [p for p in [owner_root --> [?:Profile]] if p.email];
     if not owners {
         log(f"No email for the owner of alert {jid(a)}; closing it without notifying");
         return;
@@ -234,16 +227,16 @@ def check_stock_alerts {
     }
 }
 
-"""Up to 50 owners not seen for 30 days. Legacy composed a re-engagement email for each and sent none (Kit can only
-mail the whole list), so until a 1:1 send is wired up this counts them and nothing else: marking them as mailed
-would skip them for 30 days."""
-def inactive_users(roots: list[Root] | None = None) -> list[Owner] {
+"""Up to 50 profiles with an address whose caller was not seen for 30 days. Legacy composed a re-engagement email for
+each and sent none (Kit can only mail the whole list), so until a 1:1 send is wired up this counts them and nothing
+else: marking them as mailed would skip them for 30 days."""
+def inactive_users(roots: list[Root] | None = None) -> list[Profile] {
     cutoff = time.time() - 30 * DAY;
     found = [
-        o
+        p
         for r in (allroots() if roots is None else roots)
-        for o in [r --> [?:Owner]]
-        if o.email and o.seen < cutoff
+        for p in [r --> [?:Profile]]
+        if p.email and [v for v in [r --> [?:Visit]] if v.seen < cutoff]
     ];
     return found[:50];
 }

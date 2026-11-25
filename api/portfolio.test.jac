@@ -88,7 +88,7 @@ test "the watchlist stars a symbol once, newest first, up to its cap" {
     assert add_to_watchlist("ONEMORE", "").error == "watchlistFull";
     assert add_to_watchlist("MSFT", "Microsoft Corp").error
         == "", "a full watchlist still refreshes";
-    assert owner().seen > 0, "reading the watchlist marks the caller seen";
+    assert visit_now().seen > 0, "reading the watchlist marks the caller seen";
 }
 
 test "a list allows its last slot and refuses the one after, for lists and for symbols" {

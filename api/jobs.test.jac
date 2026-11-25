@@ -46,7 +46,7 @@ def stub(alerts: list[Alert] = [], quotes: dict[str, float] = {}) {
     for n in [root -->] + [root.shared -->] {
         remove(n);
     }
-    root ++> Owner("owner@example.test", locale="pl");
+    root ++> Profile(email="owner@example.test", locale="pl");
     for a in alerts {
         root ++> a;
     }
@@ -145,7 +145,7 @@ test "an email that is skipped or fails releases the alert; an owner with no add
     assert check() == (1, 1) and (a.triggered, a.active) == (True, False) and len(alert_mails) == 2;
     b = price_alert("ABOVE", 200.0);
     stub([b], {"TSLA": 250.0});
-    [root --> [?:Owner]][0].email = "";
+    [root --> [?:Profile]][0].email = "";
     assert check() == (1, 1) and alert_mails == [] and (b.triggered, b.active) == (True, False);
 }
 
@@ -171,14 +171,6 @@ test "the welcome email falls back to the stock intro when every AI provider fai
     assert welcome_mails[0][2].startswith("Thanks for joining Openstock.");
 }
 
-test "sign-up notes where the new caller's alerts go" {
-    stub();
-    remove([root --> [?:Owner]][0]);
-    send_welcome("ala@example.com", "Ala Nowak", "PL", "Growth", "Medium", "Technology", "pl");
-    me = [root --> [?:Owner]][0];
-    assert (me.email, me.name, me.locale) == ("ala@example.com", "Ala Nowak", "pl") and me.seen > 0;
-}
-
 test "a clock-bound job is due once on its day, from its hour on, with its retries" {
     stub();
     assert claim("weekly-news", 9, 0, 2) is not None, "Monday 09:05";
@@ -195,11 +187,11 @@ test "a clock-bound job is due once on its day, from its hour on, with its retri
     assert len([root.shared --> [?:Ran]]) == 2;
 }
 
-test "inactive users are the owners with an address not seen for thirty days" {
+test "inactive users are the profiles with an address whose caller was not seen for thirty days" {
     stub();
-    me = [root --> [?:Owner]][0];
-    me.seen = time.time() - 29 * DAY;
+    assert inactive_users([root]) == [], "never seen: nothing to go by";
+    seen = root ++> Visit(time.time() - 29 * DAY);
     assert inactive_users([root]) == [];
-    me.seen = time.time() - 31 * DAY;
-    assert inactive_users([root]) == [me];
+    seen.seen = time.time() - 31 * DAY;
+    assert inactive_users([root]) == [root --> [?:Profile]];
 }

@@ -45,29 +45,20 @@ node Alert {
         created_at: float = 0.0;
 }
 
-"""Who a root belongs to, as far as the jobs need: where to mail their alerts, in which language, and when they were
-last here. The accounts plugin keeps the address itself, out of the app's reach."""
-node Owner {
-    has email: str = "",
-        name: str = "",
-        locale: str = "en",
-        seen: float = 0.0;
+"""When a root's caller was last here, for the inactive-user check: the accounts plugin's own records are out of the
+app's reach."""
+node Visit {
+    has seen: float = 0.0;
 }
 
-"""The caller's Owner, made on first sight and marked seen (at most hourly, to spare the store a write per call)."""
-def owner -> Owner {
-    found = [root --> [?:Owner]];
-    me = found[0] if found else root ++> Owner();
+"""Mark the caller seen: at most hourly, to spare the store a write per call."""
+def visit_now -> Visit {
+    found = [root --> [?:Visit]];
+    me = found[0] if found else root ++> Visit();
     if time.time() - me.seen > 3600 {
         me.seen = time.time();
     }
     return me;
-}
-
-"""Record what sign-up (or a profile change) knows of the caller; an empty value keeps what is there."""
-def remember_owner(email: str = "", name: str = "", locale: str = "") {
-    me = owner();
-    (me.email, me.name, me.locale) = (email or me.email, name or me.name, locale or me.locale);
 }
 
 """A cleaned list name; "" when it would be empty or too long."""
@@ -120,7 +111,7 @@ def drop(holder: Root | NamedList, symbol: str) {
 
 """The starred watchlist, newest first. The sidebar asks on every page, which is what keeps `seen` current."""
 def:protect get_watchlist -> list[WatchItem] {
-    owner();
+    visit_now();
     return sorted(
         [item(p) for p in [root --> [?:Pick]]], key=lambda (w: WatchItem) -> float { -w.added_at }
     );
@@ -253,9 +244,8 @@ def alert_error(symbol: str, condition: str, price: float, is_sma: bool, period:
             if not re.fullmatch(ALERT_SYMBOL, symbol)
             else "conditionInvalid"
                 if condition not in ["ABOVE", "BELOW"]
-                else # The alert checker prices symbols through Finnhub, whose free plan covers US stocks and crypto
-                "marketUnsupported"
-                    if not has_finnhub_quotes(symbol)
+                else "marketUnsupported"
+                    if not has_finnhub_quotes(symbol)  # The alert checker prices symbols through Finnhub, whose free plan covers US stocks and crypto
                     else "priceInvalid"
                         if not is_sma and not 0 < price < float("inf")
                         else "periodInvalid"
