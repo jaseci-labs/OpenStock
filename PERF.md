@@ -67,6 +67,20 @@ API returns appear in Next's HTML.
 so its output differs from `scripts/check-env.mjs` by design. Both exit 0 with every required
 variable present. The figure compares process start-up and a small amount of work.
 
+### Shared functions (per call, same inputs; Jac as native code, original under vitest/V8)
+
+Measured with a temporary vitest file in the original and a temporary `test` block in each Jac
+module; both were removed afterwards. The inputs are the 518 tickers plus 8 international symbols,
+500 closes, and one AI-style intro with tags and entities. The outputs printed by both sides were
+identical.
+
+| Function | Original | Jac before | Jac after |
+|---|---:|---:|---:|
+| `tradingview_symbol` over 526 symbols | 4226 µs | 193 µs | 102–193 µs |
+| `sma`, periods 20/50/100/200 over 500 closes | 1.15 µs | 5.43 µs | **0.63 µs** |
+| `esc` (escape HTML) | 4.28 µs | 2.48 µs | 2.48 µs |
+| `sanitize_intro` | 6.14 µs | 18–30 µs | unchanged |
+
 The two test suites differ: vitest runs the original's 274 tests, and `neojac test` runs the
 rewrite's 158 tests, which cover the same modules. Each suite passes in full on its own code.
 
@@ -84,6 +98,15 @@ rewrite's 158 tests, which cover the same modules. Each suite passes in full on 
   2.10 ms and 518 req/s, ahead of Next. `tickers_by_sector` is also built once, at load, rather than
   on every call. That saves the 73 µs grouping, but this endpoint's cost is almost all JSON encoding
   (blocker 2).
+* **`sma` was 4.7× slower than the original** (commit 2fd814d). `sum(closes[-period:])` copied the
+  last closes and then summed the copy. A loop over the indexes now adds the same values in the
+  same order as the original's loop. It takes 0.63 µs, faster than the original's 1.15 µs, with
+  identical results. It runs once per moving-average alert on each check (`api/jobs.jac`) and when
+  an alert is made (`api/portfolio.jac`).
+* **`sanitize_intro` stays about 3× slower than V8** (18–30 µs against 6 µs). Nearly all of it is
+  two `re.sub` calls in neojac's native regex engine. Compiling the patterns once was within the
+  noise (15–36 µs either way at load 45–60), so that change was not kept. The function runs once per
+  welcome email, which is network-bound.
 * **The directory page `/s` is level with Next, not ahead.** About 80% of its time is the server
   encoding 518 `Ticker` objects (93 KB) to JSON (blocker 2). The page reads only `name` and `symbol`.
   A narrower return type would make the page about 4× cheaper, but it changes what the public
