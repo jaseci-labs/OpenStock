@@ -11,6 +11,10 @@ RUN neojac install && neojac build web && mv dist/web-linux-* /app
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tzdata && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app /app
+# Read at run time: email translations and the ticker index
+COPY --from=build /src/messages /app/messages
+COPY --from=build /src/data /app/data
+WORKDIR /app
 ENV JAC_WEB_LISTEN=0.0.0.0:3000 JAC_WEB_DATA=/data
 VOLUME /data
 EXPOSE 3000
