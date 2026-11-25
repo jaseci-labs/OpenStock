@@ -63,9 +63,8 @@ def stub(alerts: list[Alert] = [], quotes: dict[str, float] = {}) {
     for sink in [history_asked, alert_mails, welcome_mails, prompts, kit_calls] {
         sink.clear();
     }
-    os.environ["OPENSTOCK_MESSAGES"] = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "messages"
-    );
+    top = os.path.dirname(os.path.dirname(__file__));
+    os.environ["OPENSTOCK_MESSAGES"] = os.path.join(top, "messages");
 }
 
 def sma_alert(last_side: str = "", condition: str = "ABOVE", symbol: str = "AAPL") -> Alert {
@@ -107,25 +106,18 @@ test "a fresh SMA alert remembers the side it starts on, so the next move across
 }
 
 test "each symbol's closes are asked for once per run, however many alerts share it" {
-    stub(
-        [sma_alert(), sma_alert("", "BELOW"), sma_alert("", "ABOVE", "MSFT")],
-        {"AAPL": 103.0, "MSFT": 103.0},
-    );
+    alerts = [sma_alert(), sma_alert("", "BELOW"), sma_alert("", "ABOVE", "MSFT")];
+    stub(alerts, {"AAPL": 103.0, "MSFT": 103.0});
     assert check() == (3, 0) and sorted(history_asked) == ["AAPL", "MSFT"];
 }
 
 test "fixed-price alerts stay on the level check, without any daily closes" {
-    (up, down, waiting) = (
-        price_alert("ABOVE", 200.0),
-        price_alert("BELOW", 250.0),
-        price_alert("ABOVE", 300.0),
-    );
+    (up, down) = (price_alert("ABOVE", 200.0), price_alert("BELOW", 250.0));
+    waiting = price_alert("ABOVE", 300.0);
     stub([up, down, waiting, price_alert("ABOVE", 1.0, -60.0)], {"TSLA": 250.0});
     assert check() == (3, 2) and history_asked == [], "an expired alert is not checked";
-    assert [m[1:6] for m in alert_mails] == [
-        ("TSLA", 250.0, 200.0, "ABOVE", 0),
-        ("TSLA", 250.0, 250.0, "BELOW", 0),
-    ];
+    sent = [m[1:6] for m in alert_mails];
+    assert sent == [("TSLA", 250.0, 200.0, "ABOVE", 0), ("TSLA", 250.0, 250.0, "BELOW", 0)];
     assert (up.triggered, up.target_price, waiting.triggered, waiting.active)
         == (True, 200.0, False, True);
 }

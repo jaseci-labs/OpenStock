@@ -78,14 +78,10 @@ test "a profile is saved once at sign-up, read back and updated" {
         == "signUpFailed";
     assert save_profile(" Amy Lee ", "Amy@Example.com", "IN", "Growth", "Medium", "Technology")
         == "";
-    assert get_profile() == {
-        "name": "Amy Lee",
-        "email": "amy@example.com",
-        "country": "IN",
-        "investmentGoals": "Growth",
-        "riskTolerance": "Medium",
-        "preferredIndustry": "Technology",
-    };
+    answers = dict(
+        investmentGoals="Growth", riskTolerance="Medium", preferredIndustry="Technology"
+    );
+    assert get_profile() == dict(name="Amy Lee", email="amy@example.com", country="IN") | answers;
     assert save_profile("Amy", "amy@example.com", "IN", "Growth", "Medium", "Technology")
         == "signUpFailed", "only once";
     assert update_profile("A", "IN", "Growth", "Medium", "Technology") == "nameLength";
