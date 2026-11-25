@@ -4,7 +4,12 @@ import from "@jac/runtime" { Link }
 
 glob UNDERLINED: str = "font-semibold text-foreground underline decoration-[var(--line)] underline-offset-4 hover:decoration-foreground",
      H2: str = "text-[22px] font-bold tracking-[-0.03em]",
-     QUIET: str = "hover:text-foreground";
+     QUIET: str = "hover:text-foreground",
+     LINKS: str = "flex flex-wrap gap-x-4 gap-y-2 text-[13px] font-semibold text-muted-foreground",
+     CRUMBS: str = "flex flex-wrap items-center gap-x-2 text-[13px] font-semibold text-muted-foreground",
+     H1: str = "mt-2 text-[36px] font-bold leading-[1.05] tracking-[-0.045em] md:text-[48px]",
+     LEDE: str = "mt-2 max-w-2xl text-[15px] leading-relaxed text-muted-foreground",
+     PEER: str = "card flex items-baseline justify-between gap-3 px-3 py-2 hover:bg-hover/40";
 
 def Fact(label: str, children: any) -> JsxElement {
     return <div>
@@ -13,15 +18,17 @@ def Fact(label: str, children: any) -> JsxElement {
     </div>;
 }
 
+# A link out to EDGAR
+def Edgar(to: str, children: any) -> JsxElement {
+    return <Go {to} rel="noopener noreferrer" className={UNDERLINED}>{children}</Go>;
+}
+
 def Report(label: str, filing: Filing | None = None) -> JsxElement {
+    missing = <span className="text-muted-foreground">Not in the recent EDGAR index</span>;
     return <Fact {label}>
-        {<Go
-            to={filing.url}
-            rel="noopener noreferrer"
-            className={UNDERLINED}
-        >{filing.form} filed {format_filing_date(filing.filed)}</Go>
+        {<Edgar to={filing.url}>{filing.form} filed {format_filing_date(filing.filed)}</Edgar>
             if filing
-            else <span className="text-muted-foreground">Not in the recent EDGAR index</span>}
+            else missing}
     </Fact>;
 }
 
@@ -36,6 +43,27 @@ def Embed(widget: str, config: dict[str, any], height: int, to: str, credit: str
             </p>
         </div>
     </section>;
+}
+
+def Filings(t: Ticker, edgar: EdgarCompany | None, loaded: str) -> JsxElement {
+    if not edgar {
+        waiting = "EDGAR did not respond for this company just now. The chart above is unaffected. "
+            if loaded == "edgar"
+            else "Asking EDGAR for this company’s filings. ";
+        return <p className="text-[15px] leading-relaxed text-muted-foreground">{waiting}<Edgar
+            to={company_browse_url(t.cik)}
+        >Open {t.symbol} on EDGAR</Edgar>
+            .
+        </p>;
+    }
+    return <dl className="grid gap-6 sm:grid-cols-2">
+        <Fact label="SIC">{" · ".join([p for p in [edgar.sic, edgar.sic_description] if p])}</Fact>
+        <Fact label="Fiscal year ends">{edgar.fiscal_year_end}</Fact>
+        <Fact label="Incorporated">{edgar.state_of_incorporation}</Fact>
+        <Report label="Latest annual report" filing={edgar.annual} />
+        <Report label="Latest quarterly report" filing={edgar.quarterly} />
+        <Fact label="All filings"><Edgar to={edgar.filings_url}>{t.name} on EDGAR</Edgar></Fact>
+    </dl>;
 }
 
 def:pub page(ticker: str) -> JsxPage {
@@ -62,29 +90,31 @@ def:pub page(ticker: str) -> JsxPage {
     t = shown.ticker;
     tv = tradingview_symbol(t.symbol);
     tv_url = tradingview_symbol_url(tv);
+    crumbs = [["/", "OpenStock"], ["/s", "US stocks"], [f"/s#{sector_anchor(t.sector)}", t.sector]];
+    faqs = [
+        [
+            "Does this page show a live price?",
+            f"The number you see in the chart is rendered by TradingView’s widget in your browser. OpenStock does not print a quote of its own on this page. A free account adds {t.symbol} to a watchlist; email alerts, when that deployment has them, run inside the app.",
+        ],
+        [
+            "Where do the filing dates come from?",
+            f"From the SEC’s EDGAR submissions feed for CIK {t.cik}. The link opens the filing on sec.gov. OpenStock is not affiliated with the SEC.",
+        ],
+    ];
     return <article className="mx-auto max-w-[1200px] px-5 pt-10 pb-4">
-        <nav
-            aria-label="Breadcrumb"
-            className="flex flex-wrap items-center gap-x-2 text-[13px] font-semibold text-muted-foreground"
-        >
+        <nav aria-label="Breadcrumb" className={CRUMBS}>
             {[
-                <span key={crumb[0]} className="contents">
-                    <Link to={crumb[0]} className={QUIET}>{crumb[1]}</Link>
+                <span key={c[0]} className="contents">
+                    <Link to={c[0]} className={QUIET}>{c[1]}</Link>
                     <span aria-hidden>/</span>
                 </span>
-                for crumb in [
-                    ["/", "OpenStock"],
-                    ["/s", "US stocks"],
-                    [f"/s#{sector_anchor(t.sector)}", t.sector],
-                ]
+                for c in crumbs
             ]}
             <span className="text-foreground">{t.symbol}</span>
         </nav>
         <header className="mt-6 max-w-3xl">
             <p className="kicker text-brand-ink">{t.exchange} · {t.symbol}</p>
-            <h1
-                className="mt-2 text-[36px] font-bold leading-[1.05] tracking-[-0.045em] md:text-[48px]"
-            >{t.name}</h1>
+            <h1 className={H1}>{t.name}</h1>
             <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">{shown.intro}</p>
         </header>
         <div className="mt-8 flex flex-wrap gap-2">
@@ -109,59 +139,18 @@ def:pub page(ticker: str) -> JsxPage {
         </div>
         <section className="mt-10">
             <h2 className="text-[28px] font-bold tracking-[-0.04em]">SEC filings</h2>
-            <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
+            <p className={LEDE}>
                 Industry code, fiscal year and filing dates come from the SEC’s EDGAR submissions feed for CIK {t.cik}.
                 The annual report is a Form 10-K, or a 20-F or 40-F for a foreign issuer. The quarterly report is a Form 10-Q when the company files one.
             </p>
-            <div className="hatch mt-5">
-                <div className="card p-6">
-                    {<dl className="grid gap-6 sm:grid-cols-2">
-                        <Fact label="SIC">
-                            {" · ".join([
-                                part
-                                for part in [edgar.sic, edgar.sic_description]
-                                if part
-                            ])}
-                        </Fact>
-                        <Fact label="Fiscal year ends">{edgar.fiscal_year_end}</Fact>
-                        <Fact label="Incorporated">{edgar.state_of_incorporation}</Fact>
-                        <Report label="Latest annual report" filing={edgar.annual} />
-                        <Report label="Latest quarterly report" filing={edgar.quarterly} />
-                        <Fact label="All filings">
-                            <Go
-                                to={edgar.filings_url}
-                                rel="noopener noreferrer"
-                                className={UNDERLINED}
-                            >{t.name} on EDGAR
-                            </Go>
-                        </Fact>
-                    </dl>
-                        if edgar
-                        else <p
-                            className="text-[15px] leading-relaxed text-muted-foreground"
-                        >{"EDGAR did not respond for this company just now. The chart above is unaffected. "
-                            if loaded == "edgar"
-                            else "Asking EDGAR for this company’s filings. "}<Go
-                            to={company_browse_url(t.cik)}
-                            rel="noopener noreferrer"
-                            className={UNDERLINED}
-                        >
-                                Open {t.symbol} on EDGAR
-                            </Go>
-                            .
-                        </p>}
-                </div>
-            </div>
+            <Hatch outer="mt-5" className="p-6"><Filings {t} {edgar} {loaded} /></Hatch>
         </section>
         <section className="mt-12">
             <h2 className={H2}>More in {t.sector}</h2>
             <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                     <li key={peer.symbol}>
-                        <Link
-                            to={ticker_path(peer.symbol)}
-                            className="card flex items-baseline justify-between gap-3 px-3 py-2 hover:bg-hover/40"
-                        >
+                        <Link to={ticker_path(peer.symbol)} className={PEER}>
                             <span className="truncate text-[14px]">{peer.name}</span>
                             <span className="mono shrink-0 text-[12px] text-faint">
                                 {peer.symbol}
@@ -171,9 +160,7 @@ def:pub page(ticker: str) -> JsxPage {
                     for peer in shown.peers
                 ]}
             </ul>
-            <p
-                className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[13px] font-semibold text-muted-foreground"
-            >
+            <p className={cx("mt-4", LINKS)}>
                 {[
                     <Link
                         key={word}
@@ -188,14 +175,9 @@ def:pub page(ticker: str) -> JsxPage {
         </section>
         <section className="mt-12">
             <h2 className={cx(H2, "mb-4")}>Questions about tracking {t.symbol}</h2>
-            <Faqs
-                items={[["Does this page show a live price?", f"The number you see in the chart is rendered by TradingView’s widget in your browser. OpenStock does not print a quote of its own on this page. A free account adds {t.symbol} to a watchlist; email alerts, when that deployment has them, run inside the app."], ["Where do the filing dates come from?", f"From the SEC’s EDGAR submissions feed for CIK {t.cik}. The link opens the filing on sec.gov. OpenStock is not affiliated with the SEC."]]}
-            />
+            <Faqs items={faqs} />
         </section>
-        <nav
-            aria-label="Related guides"
-            className="mt-10 flex flex-wrap gap-x-4 gap-y-2 text-[13px] font-semibold text-muted-foreground"
-        >
+        <nav aria-label="Related guides" className={cx("mt-10", LINKS)}>
             {[
                 <Link key={g.slug} to={f"/compare/{g.slug}"} className={QUIET}>{g.title}</Link>
                 for g in GUIDES[:4]

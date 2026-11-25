@@ -135,13 +135,14 @@ graph import {
     ui.i18n ++> ui.site | ui.market { tr }
     ui.kit ++> ui.site { cx, Dialog }
     ui.kit ++> ui.market { cx, ChangePill, PriceFlash, DataFreshness }
-    ui.kit ++> pages.index | pages.love | pages.sponsor | pages.changelog | pages.compare.index | pages.s.index {
+    ui.kit ++> pages.index | pages.love | pages.sponsor | pages.changelog | pages.compare.index | pages.s.index | pages.s {
         cx,
     }
     content.site ++> ui.site { REPO_URL, DISCORD_URL, RepoStats, format_count }
     content.sponsors ++> ui.site {
         Sponsor,
         Perk,
+        Tier,
         SPONSOR_TIERS,
         ACTIVE_SPONSORS,
         TIER_COLOR,
@@ -157,16 +158,16 @@ graph import {
     ui.site ++> ui.shell { SponsorLink, SponsorMark, UpdateBanner }
     ui.market ++> ui.shell { ProductPreview }
     ui.site ++> pages.layout { MarketingLayout, head }
-    ui.site ++> pages.about { PageHero, SectionHead, IconCard, Go, CTA, CTA_GHOST }
+    ui.site ++> pages.about { PageHero, IconCard, Go, CTA, CTA_GHOST, rows, Band, Hatch }
     content.site ++> pages.about { REPO_URL, GOOD_FIRST_ISSUES_URL }
-    ui.site ++> pages.help { PageHero, SectionHead, IconCard, Go, Faqs, CtaCard }
+    ui.site ++> pages.help { PageHero, IconCard, Go, Faqs, CtaCard, rows, Band }
     content.site ++> pages.help { REPO_URL, DISCORD_URL }
     content.sponsors ++> pages.help | pages.terms { SPONSOR_CONTACT_EMAIL }
-    ui.site ++> pages.terms { PageHero, SectionHead }
-    ui.site ++> "pages/api-docs" { PageHero, SectionHead, IconCard, Go }
+    ui.site ++> pages.terms { PageHero, Band, Hatch, LINK }
+    ui.site ++> "pages/api-docs" { PageHero, SectionHead, IconCard, Go, rows, Band, Hatch }
     content.site ++> "pages/api-docs" { REPO_URL }
     content.changelog ++> "pages/api-docs" { RELEASES }
-    ui.site ++> pages.love { PageHero, SectionHead, SponsorLink, Go, CTA, CTA_GHOST }
+    ui.site ++> pages.love { PageHero, SponsorLink, Go, CTA, CTA_GHOST, rows, Band, LINK, HATCHED }
     content.site ++> pages.love { REPO_URL }
     content.sponsors ++> pages.love {
         Sponsor,
@@ -175,7 +176,20 @@ graph import {
         PREVIOUS_SUPPORTERS,
         tier_name,
     }
-    ui.site ++> pages.index { SectionHead, IconCard, SponsorLink, Go, CTA, CTA_GHOST, use_anchor }
+    ui.site ++> pages.index {
+        SectionHead,
+        IconCard,
+        SponsorLink,
+        Go,
+        CTA,
+        CTA_GHOST,
+        MUTED,
+        use_anchor,
+        rows,
+        Band,
+        Hatch,
+        Live,
+    }
     ui.market ++> pages.index { ProductPreview }
     content.site ++> pages.index {
         REPO_URL,
@@ -196,6 +210,11 @@ graph import {
         CTA_GHOST,
         MAILTO,
         use_anchor,
+        rows,
+        Hatch,
+        Live,
+        MUTED,
+        LINK,
     }
     content.site ++> pages.sponsor { DISCORD_URL, RepoStats, format_count, sponsor_checkout_url }
     content.sponsors ++> pages.sponsor {
@@ -214,24 +233,25 @@ graph import {
         tier_border,
         tier_name,
     }
-    ui.site ++> pages.changelog { PageHero, SectionHead, Go, CTA, CTA_GHOST }
+    ui.site ++> pages.changelog { PageHero, Go, CTA, CTA_GHOST, Band, Hatch, LINK }
     content.site ++> pages.changelog { REPO_URL, GOOD_FIRST_ISSUES_URL }
     content.changelog ++> pages.changelog {
         Credit,
         Release,
+        Section,
         RELEASES,
         MAINTAINER,
         contributors,
         credit_label,
         credit_title,
     }
-    ui.site ++> pages.compare { PageHero }
+    ui.site ++> pages.compare { PageHero, Band }
     content.comparisons ++> pages.compare | pages.s.index { GUIDES }
     ui.site ++> pages.compare.index { PageHero, Faqs, CtaCard, NotFound, head, CTA, CTA_GHOST }
     content.comparisons ++> pages.compare.index { GUIDES, find_guide }
     content.tickers ++> pages.compare.index { Ticker, ticker_path }
     api.seo ++> pages.compare.index { guide_ld, find_ticker }
-    ui.site ++> pages.s { PageHero, head, use_anchor, CTA, CTA_GHOST }
+    ui.site ++> pages.s { PageHero, head, use_anchor, CTA, CTA_GHOST, WIDE }
     content.tickers ++> pages.s {
         Ticker,
         DIRECTORY_TITLE,
@@ -240,9 +260,10 @@ graph import {
         sector_anchor,
     }
     api.seo ++> pages.s { tickers_by_sector, directory_ld }
-    ui.site ++> pages.s.index { Go, Faqs, CtaCard, NotFound, head, CTA, CTA_GHOST }
+    ui.site ++> pages.s.index { Go, Faqs, CtaCard, NotFound, head, CTA, CTA_GHOST, Hatch }
     ui.market ++> pages.s.index { TradingView, symbol_info, candle_chart }
     content.tickers ++> pages.s.index {
+        Ticker,
         Filing,
         EdgarCompany,
         TickerPage,
@@ -316,7 +337,7 @@ graph import {
         ago,
         NAME_INPUT,
     }
-    ui.stocks ++> pages.stocks { use_live, Empty, WatchButton, AlertButton, ListButton, ago }
+    ui.stocks ++> pages.stocks { use_live, Empty, WatchButton, AlertButton, ListButton, ago, quiet }
     fmt ++> pages.dashboard { grouped }
     fmt ++> pages.watchlist | pages.stocks { money, signed, compact }
     model ++> pages.dashboard { Market, DailyQuote, yahoo_app_symbol }
