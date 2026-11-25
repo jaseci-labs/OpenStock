@@ -157,12 +157,12 @@ graph import {
     ui.site ++> ui.shell { SponsorLink, SponsorMark, UpdateBanner }
     ui.market ++> ui.shell { ProductPreview }
     ui.site ++> pages.layout { MarketingLayout, head }
-    ui.site ++> pages.about { PageHero, SectionHead, IconCard, Go, CTA, CTA_GHOST }
+    ui.site ++> pages.about { PageHero, IconCard, Go, CTA, CTA_GHOST, rows, Band, Hatch }
     content.site ++> pages.about { REPO_URL, GOOD_FIRST_ISSUES_URL }
-    ui.site ++> pages.help { PageHero, SectionHead, IconCard, Go, Faqs, CtaCard }
+    ui.site ++> pages.help { PageHero, IconCard, Go, Faqs, CtaCard, rows, Band }
     content.site ++> pages.help { REPO_URL, DISCORD_URL }
     content.sponsors ++> pages.help | pages.terms { SPONSOR_CONTACT_EMAIL }
-    ui.site ++> pages.terms { PageHero, SectionHead }
+    ui.site ++> pages.terms { PageHero, Band, Hatch, LINK }
     ui.site ++> "pages/api-docs" { PageHero, SectionHead, IconCard, Go, rows, Band, Hatch }
     content.site ++> "pages/api-docs" { REPO_URL }
     content.changelog ++> "pages/api-docs" { RELEASES }
