@@ -1,7 +1,5 @@
-"""The signed-in caller's profile, and what the public header shows of the repository."""
+"""The signed-in caller's profile."""
 import json;
-import time;
-import urllib.request;
 
 # Onboarding answers live on the caller's own root; the accounts plugin keeps only the sign-in
 node Profile {
@@ -13,9 +11,6 @@ node Profile {
         preferred_industry: str = "",
         locale: str = "en";  # the language emails to this caller go out in
 }
-
-glob stars: int = 0,
-     stars_read: float = 0.0;
 
 # The welcome email goes out beside the call (send_welcome returns at once), in the language picked at sign-up
 def on_signed_up(profile: Profile) {
@@ -96,19 +91,4 @@ def:protect update_profile(
         );
     }
     return problem;
-}
-
-# The repository's star count for the public header, read from GitHub once a day; 0 hides it
-def:pub repo_stars -> int {
-    if time.time() - stars_read > 86400.0 {
-        stars_read = time.time();
-        try {
-            with urllib.request.urlopen(
-                "https://api.github.com/repos/Open-Dev-Society/OpenStock", timeout=4
-            ) as reply {
-                stars = int(json.loads(reply.read()).get("stargazers_count", 0));
-            }
-        } except Exception {}
-    }
-    return stars;
 }

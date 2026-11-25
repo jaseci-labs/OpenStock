@@ -75,34 +75,30 @@ glob PRAISE: list[dict[str, str]] = [
      CHIP: str = "mr-3 flex h-16 shrink-0 items-center gap-3 rounded-[14px] bg-card px-5 shadow-[inset_0_0_0_1px_var(--line)] transition-colors hover:bg-hover",
      CARD: str = "hatch group mb-3 break-inside-avoid";
 
-def tier_name(sponsor: dict[str, any]) -> str {
-    return SPONSOR_TIERS[sponsor["tier"]]["name"] if sponsor.get("tier") else "Sponsor";
-}
-
-# Sponsors, past sponsors and past supporters as one row of chips: {"name", "url", "label"} and a logo, avatar or perk
-def wall -> list[dict[str, any]] {
+# Sponsors, past sponsors and past supporters as one row of chips: (sponsor, label, avatar).
+# Only a current sponsor's chip offers its perk.
+def wall -> list[tuple[Sponsor, str, str]] {
+    now = [(s, tier_name(s.tier), "") for s in ACTIVE_SPONSORS];
     past = [
-        {
-            **s,
-            "perk": None,
-            "label": f"Past {tier_name(s).lower()}"
-                + (f" · {s['period']}" if s.get("period") else ""),
-        }
+        (
+            Sponsor(s.name, s.url, s.logo, s.tier, icon_only=s.icon_only),
+            f"Past {tier_name(s.tier).lower()}" + (f" · {s.period}" if s.period else ""),
+            "",
+        )
         for s in PREVIOUS_SPONSORS
     ];
-    backers: list[dict[str, any]] = [
-        {
-            "name": s[0],
-            "url": f"https://github.com/{s[1]}",
-            "avatar": f"https://github.com/{s[1]}.png?size=64",
-            "label": "Past supporter",
-        }
-        for s in PREVIOUS_SUPPORTERS
+    backers = [
+        (
+            Sponsor(name, f"https://github.com/{login}", "", ""),
+            "Past supporter",
+            f"https://github.com/{login}.png?size=64",
+        )
+        for (login, name) in PREVIOUS_SUPPORTERS.items()
     ];
-    return [{**s, "label": tier_name(s)} for s in ACTIVE_SPONSORS] + past + backers;
+    return now + past + backers;
 }
 
-def MarqueeRow(items: list[dict[str, any]], reverse: bool = False) -> JsxElement {
+def MarqueeRow(items: list[tuple[Sponsor, str, str]], reverse: bool = False) -> JsxElement {
     # Copies after the first are decoration for the loop: hidden from screen readers and skipped by Tab, still clickable
     return <div className={cx("marquee-mask flex overflow-hidden", reverse and "is-extra")}>
         <div className={cx("marquee", reverse and "is-reverse")}>
@@ -110,38 +106,38 @@ def MarqueeRow(items: list[dict[str, any]], reverse: bool = False) -> JsxElement
                 <div key={copy} className="flex shrink-0" aria-hidden={copy > 0 or None}>
                     {[
                         <SponsorLink
-                            key={item["name"]}
-                            sponsor={item}
+                            key={s.name}
+                            sponsor={s}
                             tabIndex={-1 if copy > 0 else None}
                             className={CHIP}
                         >
                             {<img
-                                src={item["avatar"]}
+                                src={avatar}
                                 alt=""
                                 width={32}
                                 height={32}
                                 loading="lazy"
                                 className="size-8 rounded-full"
                             />
-                                if item.get("avatar")
+                                if avatar
                                 else None}
                             {<img
-                                src={item["logo"]}
-                                alt={"" if item.get("iconOnly") else item["name"]}
+                                src={s.logo}
+                                alt={"" if s.icon_only else s.name}
                                 className="h-6 w-auto"
                             />
-                                if item.get("logo")
+                                if s.logo
                                 else None}
                             <span className="flex flex-col gap-0.5">
                                 {<span className="text-[14px] font-semibold leading-none">
-                                    {item["name"]}
+                                    {s.name}
                                 </span>
-                                    if not item.get("logo") or item.get("iconOnly")
+                                    if not s.logo or s.icon_only
                                     else None}
-                                <span className="kicker leading-none">{item["label"]}</span>
+                                <span className="kicker leading-none">{label}</span>
                             </span>
                         </SponsorLink>
-                        for item in items
+                        for (s, label, avatar) in items
                     ]}
                     <Link
                         to="/sponsor#tiers"
@@ -165,7 +161,7 @@ def PraiseCard(praise: dict[str, str]) -> JsxElement {
         </div>;
     }
     if "channel" in praise {
-        return <a href={praise["url"]} target="_blank" rel="noreferrer" className={CARD}>
+        return <Go to={praise["url"]} className={CARD}>
             <div className="card overflow-hidden">
                 <div className="relative aspect-video bg-page">
                     {<img
@@ -189,9 +185,9 @@ def PraiseCard(praise: dict[str, str]) -> JsxElement {
                     </p>
                 </div>
             </div>
-        </a>;
+        </Go>;
     }
-    return <a href={praise["url"]} target="_blank" rel="noreferrer" className={CARD}>
+    return <Go to={praise["url"]} className={CARD}>
         <div className="card flex flex-col gap-3 p-5">
             <p className="kicker">Article · {praise["source"]}</p>
             <p className="text-[17px] font-bold leading-snug tracking-[-0.02em]">
@@ -202,7 +198,7 @@ def PraiseCard(praise: dict[str, str]) -> JsxElement {
                 className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
             /></span>
         </div>
-    </a>;
+    </Go>;
 }
 
 def:pub page -> JsxPage {
@@ -214,16 +210,8 @@ def:pub page -> JsxPage {
             title="Thank you for keeping OpenStock free."
             sub="The sponsors who pay the bills, the supporters who chip in, and everyone who writes, posts or films something about it."
         >
-            <Link
-                to="/sponsor"
-                className="btn btn-primary h-11 px-5 text-[15px]"
-            >Become a sponsor</Link>
-            <a
-                href={share}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-ghost h-11 px-5 text-[15px]"
-            >Post about OpenStock</a>
+            <Link to="/sponsor" className={CTA}>Become a sponsor</Link>
+            <Go to={share} className={CTA_GHOST}>Post about OpenStock</Go>
         </PageHero>
         <section className="mt-16 flex flex-col gap-3" aria-label="Sponsors and supporters">
             <MarqueeRow {items} />
@@ -239,12 +227,11 @@ def:pub page -> JsxPage {
                 {[<PraiseCard key={p.get("post") or p["url"]} praise={p} /> for p in PRAISE]}
             </div>
             <p className="mt-6 text-[14px] text-faint">
-                Made something about OpenStock? <a
-                href={REPO_URL + "/edit/main/pages/love.jac"}
-                target="_blank"
-                rel="noreferrer"
+                Made something about OpenStock?{" "}<Go
+                to={REPO_URL + "/edit/main/pages/love.jac"}
                 className="font-semibold text-brand-ink hover:underline"
-            >Add it to this page</a>.
+            >Add it to this page</Go>
+                .
             </p>
         </section>
     </>;

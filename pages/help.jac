@@ -1,4 +1,4 @@
-import from "lucide-react" { BookOpen, ChevronDown, Github, MessageCircle }
+import from "lucide-react" { BookOpen, Github, MessageCircle }
 
 glob CARDS: list[list[any]] = [
          [
@@ -71,52 +71,22 @@ def:pub page -> JsxPage {
                     key={c[1]}
                     icon={c[0]}
                     title={c[1]}
-                    footer={<a href={c[3]} target={"_blank" if c[3].startswith("http") else None} rel="noreferrer" className="btn btn-ghost w-full">{c[4]}</a>}
+                    footer={<Go to={c[3]} className="btn btn-ghost w-full">{c[4]}</Go>}
                 >{c[2]}</IconCard>
                 for c in CARDS
             ]}
         </section>
         <section className="mx-auto mt-24 max-w-[1200px] px-5">
             <SectionHead kicker="FAQ" title="Common questions." />
-            <div className="hatch">
-                <div className="card row-list overflow-hidden">
-                    {[
-                        <details key={faq[0]} className="group">
-                            {#* Padding lives on the summary so the whole row is the click target, in every browser *#}
-                            <summary
-                                className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-semibold text-foreground transition-colors hover:bg-hover/40 [&::-webkit-details-marker]:hidden"
-                            >
-                                {faq[0]}
-                                <ChevronDown
-                                    className="size-4 flex-none text-faint transition-transform duration-200 group-open:rotate-180"
-                                />
-                            </summary>
-                            <p
-                                className="max-w-3xl px-5 pb-5 text-[15px] leading-relaxed text-muted-foreground"
-                            >{faq[1]}</p>
-                        </details>
-                        for faq in FAQS
-                    ]}
-                </div>
-            </div>
+            <Faqs items={FAQS} hover />
         </section>
         <section className="mx-auto mt-24 max-w-[1200px] px-5">
-            <div className="hatch">
-                <div
-                    className="card flex flex-col items-start justify-between gap-5 p-8 md:flex-row md:items-center"
-                >
-                    <div>
-                        <h2 className="text-[22px] font-bold tracking-[-0.03em]">Still stuck?</h2>
-                        <p
-                            className="mt-1 text-muted-foreground"
-                        >Our team and community answer emails, for free.</p>
-                    </div>
-                    <a
-                        href={f"mailto:{CONTACT_EMAIL}"}
-                        className="btn btn-primary h-11 px-5 text-[15px]"
-                    >Email support</a>
-                </div>
-            </div>
+            <CtaCard
+                title="Still stuck?"
+                body="Our team and community answer emails, for free."
+                to={f"mailto:{SPONSOR_CONTACT_EMAIL}"}
+                label="Email support"
+            />
         </section>
     </>;
 }
