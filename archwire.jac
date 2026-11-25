@@ -137,7 +137,7 @@ graph import {
     api.quotes ++> ui.market { live_quotes, yahoo_daily_quotes, is_realtime }
     api.markets ++> ui.market { get_market }
     content.sponsors ++> ui.shell { sidebar_sponsors, SIDEBAR_SPONSOR_SLOTS }
-    ui.site ++> ui.shell { SponsorLink, SponsorMark, UpdateBanner }
+    ui.site ++> ui.shell { SponsorLink, SponsorMark, UpdateBanner, Live, Logo }
     ui.market ++> ui.shell { ProductPreview }
     ui.site ++> pages.layout { MarketingLayout, head }
     ui.site ++> pages.about { PageHero, IconCard, Go, CTA, CTA_GHOST, rows, Band, Hatch }
