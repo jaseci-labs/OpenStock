@@ -166,7 +166,7 @@ graph import {
     ui.site ++> "pages/api-docs" { PageHero, SectionHead, IconCard, Go, rows, Band, Hatch }
     content.site ++> "pages/api-docs" { REPO_URL }
     content.changelog ++> "pages/api-docs" { RELEASES }
-    ui.site ++> pages.love { PageHero, SectionHead, SponsorLink, Go, CTA, CTA_GHOST }
+    ui.site ++> pages.love { PageHero, SponsorLink, Go, CTA, CTA_GHOST, rows, Band, LINK, HATCHED }
     content.site ++> pages.love { REPO_URL }
     content.sponsors ++> pages.love {
         Sponsor,
