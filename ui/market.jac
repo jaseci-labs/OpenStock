@@ -272,7 +272,7 @@ def:pub IndexPulse(
                 if market.yahoo {
                     href = f"/stocks/{stock}" if stock else "";
                     code = p.symbol.split(":")[-1];
-                    before = f"{d.currency}  " if d and stock else "";
+                    before = f"{d.currency} " if d and stock else "";
                     <PulseTile key={p.symbol} {p} quote={d} {code} {href} {before} {loc} />
                 } elif p.finnhub {
                     href = f"/stocks/{encodeURIComponent(p.finnhub)}";
