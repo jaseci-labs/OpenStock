@@ -92,10 +92,7 @@ def num(v: any, fallback: float = 0.0) -> float {
 """data[a][b]..., or None where the path ends early."""
 def dig(data: any, *path: str | int) -> any {
     try {
-        for key in path {
-            data = data[key];
-        }
-        return data;
+        return data if not path else dig(data[path[0]], *path[1:]);
     } except Exception {
         return None;
     }
@@ -164,8 +161,7 @@ def fetch_json(url: str, ttl: int = 0) -> any {
     if not ttl {
         return request(url);
     }
-    now = time.time();
-    hit = cache.get(url);
+    (now, hit) = (time.time(), cache.get(url));
     if hit is None or (hit.failed and hit.fresh_until < now) {
         return refresh(url, ttl);
     }
