@@ -7,6 +7,7 @@ glob INPUT: str = "placeholder:text-muted-foreground dark:bg-input/30 border-inp
      CHIP: str = "h-9 rounded-full px-3.5 text-[13.5px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.96]",
      CHIP_ON: str = "bg-brand-soft text-brand-ink shadow-[inset_0_0_0_1px_oklch(0.8_0.13_176/0.45)]",
      CHIP_OFF: str = "text-muted-foreground shadow-[inset_0_0_0_1px_var(--line)] hover:bg-hover hover:text-foreground",
+     BRAND: str = "inline-flex items-center gap-1 rounded-lg px-3 py-0.5 text-[1.17em] font-medium text-white shadow-[inset_0_0_0_1px_var(--line)]",
      GOOGLE_PATHS: list[list[str]] = [
          [
              "#4285F4",
@@ -206,18 +207,15 @@ def:pub email_problem(email: str) -> str {
 }
 
 def:pub FooterLink(text: str, linkText: str, href: str) -> JsxElement {
+    link = <Link to={href} className="footer-link">{linkText}</Link>;
     return <div className="pt-4 text-center">
-        <p className="text-sm text-gray-500">{text} <Link to={href} className="footer-link">
-            {linkText}
-        </Link></p>
+        <p className="text-sm text-gray-500">{text} {link}</p>
     </div>;
 }
 
 def:pub Branding(className: str = "flex justify-center") -> JsxElement {
-    return <div className={className}>
-        <div
-            className="inline-flex items-center gap-1 rounded-lg px-3 py-0.5 text-[1.17em] font-medium text-white shadow-[inset_0_0_0_1px_var(--line)]"
-        >
+    return <div {className}>
+        <div className={BRAND}>
             <span className="text-sm -tracking-tighter opacity-75">
                 {t("OpenDevSocietyBranding.initiativeBy")}
             </span>
@@ -225,6 +223,48 @@ def:pub Branding(className: str = "flex justify-center") -> JsxElement {
             <span className="font-bold tracking-tight">Open Dev Society</span>
         </div>
     </div>;
+}
+
+# An auth page's title and the line under it, from the messages under `ns`; `quiet` is the smaller pair
+def:pub AuthHead(ns: str, quiet: bool = False) -> JsxElement {
+    return <>
+        <h1 className={"form-title" if quiet else "form-title mb-2"}>{t(f"{ns}.title")}</h1>
+        <p className={"mb-6 text-sm text-gray-400" if quiet else "mb-8 text-faint"}>
+            {t(f"{ns}.subtitle")}
+        </p>
+    </>;
+}
+
+# The end of an auth form: its button, the link to the other page (`text` and `link` are keys under `ns`), the branding
+def:pub AuthEnd(busy: bool, ns: str, text: str, link: str, href: str) -> JsxElement {
+    return <>
+        <SubmitButton
+            {busy}
+            label={t(f"{ns}.submit")}
+            busyLabel={t(f"{ns}.submitting")}
+            className="yellow-btn mt-5 w-full"
+        />
+        <FooterLink text={t(f"{ns}.{text}")} linkText={t(f"{ns}.{link}")} {href} />
+        <Branding className="mt-10 flex justify-center" />
+    </>;
+}
+
+# The email field every auth form opens with; its error shows once the form was tried
+def:pub EmailField(
+    value: str,
+    onInput: Callable[[str], None],
+    tried: bool,
+    placeholder: str = "opendevsociety@cc.cc",
+) -> JsxElement {
+    error = email_problem(value) if tried else "";
+    return <Field
+        name="email"
+        label={t("AuthFields.email")}
+        {placeholder}
+        {value}
+        {onInput}
+        {error}
+    />;
 }
 
 # Google and GitHub buttons, only for the ones the accounts plugin offers (their keys are set)
