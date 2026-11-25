@@ -331,3 +331,48 @@ next cross instead of firing at once. No previous side yet means no cross."""
 def has_crossed(condition: str, last_side: str, price: float, average: float) -> bool {
     return bool(last_side) and last_side != condition and side_of(price, average) == condition;
 }
+
+# Watchlists, named lists and alerts. The caps are shared so pages can say them in their messages.
+glob MAX_WATCHLIST: int = 50,
+     MAX_LISTS: int = 10,
+     MAX_LIST_SYMBOLS: int = 50,
+     MAX_LIST_NAME: int = 60,
+     # The checker re-prices every active alert's symbol through Finnhub every 5 minutes
+     MAX_ACTIVE_ALERTS: int = 50;
+
+obj WatchItem {
+    has symbol: str,
+        company: str,
+        added_at: float = 0.0;  # unix time, like every time below
+}
+
+"""A named list ("Banks"): an extra grouping beside the starred watchlist."""
+obj ListSummary {
+    has id: str,
+        name: str,
+        count: int,
+        symbols: list[WatchItem];
+}
+
+"""A fixed-price alert, or (target "SMA") a cross of the moving average of the last sma_period daily closes; then
+target_price holds the average as last computed."""
+obj AlertInfo {
+    has id: str,
+        symbol: str,
+        condition: str,  # ABOVE | BELOW
+        target_price: float,
+        target: str = "PRICE",  # PRICE | SMA
+        sma_period: int = 0,
+        active: bool = True,
+        triggered: bool = False,
+        expires_at: float = 0.0,
+        created_at: float = 0.0;
+}
+
+"""What a write answers: `error` is "" when it worked, else a code the page translates (a key of the Errors
+messages for the watchlist and lists; for alerts see create_alert), then the list or alert made, where one was."""
+obj Saved {
+    has error: str = "",
+        made: ListSummary | None = None,
+        alert: AlertInfo | None = None;
+}
