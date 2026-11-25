@@ -7,6 +7,7 @@ glob CTA: str = "btn btn-primary h-11 px-5 text-[15px]",
      MAILTO: str = f"mailto:{SPONSOR_CONTACT_EMAIL}?subject=Sponsoring%20OpenStock",
      FOCUS: str = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70 focus-visible:ring-offset-2 focus-visible:ring-offset-side",
      HATCHED: str = "repeating-linear-gradient(-45deg, oklch(0.4 0.01 95 / 0.22) 0 1px, transparent 1px 5px)",
+     CTA_ROW: str = "flex flex-col items-start justify-between gap-5 p-8 md:flex-row md:items-center",
      SLOT: str = "flex h-12 min-w-[140px] items-center justify-center rounded-[12px] px-4",
      SUMMARY: str = "flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-semibold [&::-webkit-details-marker]:hidden",
      FOOTER_LINKS: dict[str, list[list[str]]] = {
@@ -67,6 +68,20 @@ def:pub use_anchor(ready: bool = True) {
     }
 }
 
+# A table written as text: one row a line, its cells split by "|"
+def:pub rows(text: str) -> list[list[str]] {
+    return [[cell.strip() for cell in line.split("|")] for line in text.strip().split("\n")];
+}
+
+# The concentric hatch shell: a recessed hatched frame (`outer`) holding one raised card
+def:pub Hatch(
+    children: any, className: str = "", outer: str = "", inner: str = "div", **rest: any
+) -> JsxElement {
+    return <div className={cx("hatch", outer)} {...rest}>
+        <@inner className={cx("card", className)}>{children}</@inner>
+    </div>;
+}
+
 # A link by where it leads: a route, another site (in a new tab), or an anchor or mailto
 def:pub Go(to: str, children: any, **rest: any) -> JsxElement {
     if to.startswith("/") {
@@ -104,31 +119,25 @@ def:pub SectionHead(kicker: str, title: str, sub: str = "") -> JsxElement {
 
 # Hatch shell holding one card: icon well, title, short body, optional footer (a link or a pill)
 def:pub IconCard(icon: any, title: str, children: any, footer: any = None) -> JsxElement {
-    return <div className="hatch">
-        <div className="card flex h-full flex-col gap-3 p-5">
-            <span className="bento-ico size-9 bg-brand-soft text-brand-ink">
-                <@icon className="size-[18px]" />
-            </span>
-            <h3 className="text-[16px] font-bold tracking-[-0.02em]">{title}</h3>
-            <div className="text-[14px] leading-relaxed text-muted-foreground">{children}</div>
-            {<div className="mt-auto pt-1">{footer}</div> if footer else None}
-        </div>
-    </div>;
+    return <Hatch className="flex h-full flex-col gap-3 p-5">
+        <span className="bento-ico size-9 bg-brand-soft text-brand-ink">
+            <@icon className="size-[18px]" />
+        </span>
+        <h3 className="text-[16px] font-bold tracking-[-0.02em]">{title}</h3>
+        <div className="text-[14px] leading-relaxed text-muted-foreground">{children}</div>
+        {<div className="mt-auto pt-1">{footer}</div> if footer else None}
+    </Hatch>;
 }
 
 # A closing card: one line of pitch and the button it leads to
 def:pub CtaCard(title: str, body: str, to: str, label: str) -> JsxElement {
-    return <div className="hatch">
-        <div
-            className="card flex flex-col items-start justify-between gap-5 p-8 md:flex-row md:items-center"
-        >
-            <div>
-                <h2 className="text-[22px] font-bold tracking-[-0.03em]">{title}</h2>
-                <p className="mt-1 max-w-xl text-muted-foreground">{body}</p>
-            </div>
-            <Go {to} className={CTA}>{label}</Go>
+    return <Hatch className={CTA_ROW}>
+        <div>
+            <h2 className="text-[22px] font-bold tracking-[-0.03em]">{title}</h2>
+            <p className="mt-1 max-w-xl text-muted-foreground">{body}</p>
         </div>
-    </div>;
+        <Go {to} className={CTA}>{label}</Go>
+    </Hatch>;
 }
 
 # Questions that open in place, each [question, answer]. Padding lives on the summary so the
