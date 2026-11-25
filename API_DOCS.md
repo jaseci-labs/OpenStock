@@ -17,7 +17,7 @@
 
 ## 🏗️ Architecture Overview
 
-OpenStock leverages a resilient event-driven architecture powered by **Inngest**. We prioritize uptime for our generative features by utilizing a multi-provider AI strategy.
+OpenStock is one program: a native server with scheduled functions, compiled from Jac by neojac. Its generative features use a multi-provider AI strategy so one provider's outage does not stop them.
 
 ### 🧠 Intelligent Model Routing
 
@@ -25,7 +25,7 @@ We don't rely on a single point of failure. Our AI infrastructure automatically 
 
 ```mermaid
 graph LR
-    A[User Action / Cron] -->|Trigger| B(Inngest Function);
+    A[User Action / Cron] -->|Trigger| B(Scheduled function);
     B --> C{Primary Provider};
     C -->|Gemini 2.5 Flash Lite| D[Generate Content];
     C -.->|Error / Rate Limit| E{Fallback Provider};
@@ -41,7 +41,7 @@ graph LR
 
 ## 🤝 AI Providers
 
-Set `AI_PROVIDER` to `gemini` (the default), `minimax` or `siray`. The code is in `lib/ai-provider.ts`.
+Set `AI_PROVIDER` to `gemini` (the default), `minimax` or `siray`. The code is in `api/ai.jac`.
 
 ### Primary: Google Gemini
 Writes the welcome emails and the weekly news summary with `gemini-2.5-flash-lite` (override with `GEMINI_MODEL`).
@@ -51,16 +51,16 @@ If the primary call fails, the same prompt is retried once on the fallback: Mini
 
 ---
 
-## ⚡ Serverless Functions (Inngest)
+## ⚡ Background jobs
 
-Our background jobs are defined in `lib/inngest/functions.ts`.
+The jobs are scheduled functions in `api/jobs.jac`, run by the app itself. `JAC_TICKS_OFF=all` turns them off.
 
-| ID | Type | Schedule/Trigger | Purpose |
+| Function | Type | Schedule/Trigger | Purpose |
 | :--- | :--- | :--- | :--- |
-| `sign-up-email` | 🔔 Event | `app/user.created` | **Personalized Onboarding.** Generates a custom welcome message based on user quiz results. |
-| `weekly-news-summary` | ⏱️ Cron | `0 9 * * 1` (Mon 9AM) | **Market Intelligence.** Summarizes top financial news and broadcasts to all users via Kit. |
-| `check-stock-alerts` | ⏱️ Cron | `*/5 * * * *` | **Real-time Monitoring.** Checks user price targets against live market data (realtime mode only; US stocks and crypto). |
-| `check-inactive-users` | ⏱️ Cron | `0 10 * * *` | **Re-engagement.** Identifies dormant users (>30 days) and sends a "We miss you" nudge. |
+| `send_welcome` | 🔔 Call | On sign-up | **Personalized Onboarding.** Generates a custom welcome message based on user quiz results. |
+| `weekly_news` | ⏱️ Schedule | Mondays from 09:00 UTC, once | **Market Intelligence.** Summarizes top financial news and broadcasts to all users via Kit. |
+| `check_stock_alerts` | ⏱️ Schedule | Every 5 minutes | **Real-time Monitoring.** Checks user price targets against live market data (realtime mode only; US stocks and crypto). |
+| `check_inactive_users` | ⏱️ Schedule | Daily | **Re-engagement.** Counts accounts not seen for 30 days (no email is sent yet). |
 
 ---
 
