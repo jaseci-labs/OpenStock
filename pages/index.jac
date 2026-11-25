@@ -1,9 +1,6 @@
+# Placeholder: the landing page is built on the marketing layout
 def:pub page -> JsxPage {
-    has text: str = "...";
-
-    async can with entry {
-        text = await ping("AAPL");
-    }
-
-    return <Panel className="m-6"><h1 className="text-2xl text-brand">{text}</h1></Panel>;
+    return <section className="mx-auto max-w-[1200px] px-5 pt-14">
+        <h1 className="text-[40px] font-bold tracking-[-0.05em]">OpenStock</h1>
+    </section>;
 }
