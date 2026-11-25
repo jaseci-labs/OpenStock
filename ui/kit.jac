@@ -66,7 +66,7 @@ def:pub Dialog(
 ) -> JsxElement | None {
     # Escape anywhere, or a press on the backdrop itself (not one that started inside the dialog)
     def away(e: any) {
-        if e.key == "Escape" or (e.type == "mousedown" and e.target == e.currentTarget) {
+        if e.target == e.currentTarget if e.type == "mousedown" else e.key == "Escape" {
             onClose();
         }
     }
@@ -98,7 +98,7 @@ def:pub Menu(
     has box: Ref[any] = Ref(None);
 
     def away(e: any) {
-        if e.key == "Escape" or (e.type == "mousedown" and not box.current.contains(e.target)) {
+        if e.key == "Escape" if e.type == "keydown" else not box.current.contains(e.target) {
             open = False;
         }
     }
