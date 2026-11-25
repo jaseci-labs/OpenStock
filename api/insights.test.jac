@@ -22,32 +22,18 @@ def stub(answers: dict[str, tuple[int, any]] = {}) {
     os.environ.pop("ADANOS_API_BASE_URL", None);
 }
 
+"""One of Adanos's rows for a ticker."""
+def found(ticker: str, buzz: float, bullish: any, trend: str, **more: any) -> dict[str, any] {
+    return {"ticker": ticker, "buzz_score": buzz, "bullish_pct": bullish, "trend": trend} | more;
+}
+
 def stock(ticker: str, buzz: float, bullish: float, trend: str, mentions: int) -> dict[str, any] {
-    return {
-        "stocks": [
-            {
-                "ticker": ticker,
-                "company_name": f"{ticker}, Inc.",
-                "buzz_score": buzz,
-                "bullish_pct": bullish,
-                "trend": trend,
-                "mentions": mentions,
-            },
-        ],
-    };
+    name = f"{ticker}, Inc.";
+    return {"stocks": [found(ticker, buzz, bullish, trend, company_name=name, mentions=mentions)]};
 }
 
 def insight(source: str, buzz: float, bullish: float) -> SourceInsight {
-    return SourceInsight(
-        source=source,
-        label=source,
-        company_name="Tesla, Inc.",
-        buzz_score=buzz,
-        bullish_pct=bullish,
-        trend="falling",
-        metric_label="Mentions",
-        metric_value=1,
-    );
+    return SourceInsight(source, source, "Tesla, Inc.", buzz, bullish, "falling", "Mentions", 1);
 }
 
 """An AlphAI article; `analyses` are (ticker, sentiment, summary)."""
@@ -91,48 +77,11 @@ def ids(news: TickerNews | None) -> list[str] {
 }
 
 test "source insight maps source-specific metrics for mentions and trades" {
-    reddit = source_insight(
-        "reddit",
-        {
-            "ticker": "TSLA",
-            "buzz_score": 81.2,
-            "bullish_pct": 46,
-            "trend": "rising",
-            "mentions": 647,
-        },
-    );
-    assert reddit
-        == SourceInsight(
-            source="reddit",
-            label="Reddit",
-            company_name=None,
-            buzz_score=81.2,
-            bullish_pct=46.0,
-            trend="rising",
-            metric_label="Mentions",
-            metric_value=647,
-        );
-    polymarket = source_insight(
-        "polymarket",
-        {
-            "ticker": "TSLA",
-            "buzz_score": 55.7,
-            "bullish_pct": 72,
-            "trend": "stable",
-            "trade_count": 3731,
-        },
-    );
-    assert polymarket
-        == SourceInsight(
-            source="polymarket",
-            label="Polymarket",
-            company_name=None,
-            buzz_score=55.7,
-            bullish_pct=72.0,
-            trend="stable",
-            metric_label="Trades",
-            metric_value=3731,
-        );
+    got = source_insight("reddit", found("TSLA", 81.2, 46, "rising", mentions=647));
+    assert got == SourceInsight("reddit", "Reddit", None, 81.2, 46.0, "rising", "Mentions", 647);
+    got = source_insight("polymarket", found("TSLA", 55.7, 72, "stable", trade_count=3731));
+    want = SourceInsight("polymarket", "Polymarket", None, 55.7, 72.0, "stable", "Trades", 3731);
+    assert got == want;
 }
 
 test "source insight is None when required values are missing" {
@@ -141,11 +90,8 @@ test "source insight is None when required values are missing" {
     assert source_insight("news", None) is None;
 }
 
-test "alignment is a wide divergence when sources materially disagree" {
+test "alignment names how far the sources agree, and which way" {
     assert source_alignment([31.0, 56.0, 48.0, 30.0]) == "Wide divergence";
-}
-
-test "alignment is bullish when sources are tightly aligned and positive" {
     assert source_alignment([61.0, 64.0, 67.0]) == "Bullish alignment";
     assert source_alignment([35.0, 38.0]) == "Bearish alignment";
     assert source_alignment([45.0, 55.0]) == "Tight alignment";
@@ -155,15 +101,12 @@ test "alignment is bullish when sources are tightly aligned and positive" {
 }
 
 test "sentiment is a compact aggregate of the available sources" {
-    got = build_sentiment(
-        "tsla",
-        [
-            insight("reddit", 74.1, 31.0),
-            insight("x", 86.1, 56.0),
-            insight("polymarket", 83.3, 30.0),
-            None,
-        ],
-    );
+    found = [
+        insight("reddit", 74.1, 31.0),
+        insight("x", 86.1, 56.0),
+        insight("polymarket", 83.3, 30.0),
+    ];
+    got = build_sentiment("tsla", found + [None]);
     assert got is not None and len(got.sources) == 3 and got.available_sources == 3;
     assert (got.symbol, got.company_name, got.average_buzz, got.bullish_average)
         == ("TSLA", "Tesla, Inc.", 81.2, 39.0);
@@ -198,22 +141,13 @@ test "get_stock_sentiment asks nothing without a key or a symbol" {
     assert get_stock_sentiment("TSLA") is None and not sent;
 }
 
-test "get_stock_sentiment is None when every source answers 404" {
-    stub({"": (404, None)});
-    assert get_stock_sentiment("TSLA") is None;
-}
-
-test "get_stock_sentiment is None when the payload holds another ticker only" {
-    stub({"": (200, stock("MSFT", 70.0, 55.0, "stable", 30))});
-    assert get_stock_sentiment("TSLA") is None;
-}
-
-test "get_stock_sentiment is None when the body is not JSON" {
-    stub({"": (200, None)});
-    assert get_stock_sentiment("TSLA") is None;
-}
-
-test "get_stock_sentiment is None when the request fails" {
+test "get_stock_sentiment is None on 404s, another ticker only, a body that is no JSON, a failure" {
+    other = stock("MSFT", 70.0, 55.0, "stable", 30);
+    cases: list[tuple[int, any]] = [(404, None), (200, other), (200, None)];
+    for answer in cases {
+        stub({"": answer});
+        assert get_stock_sentiment("TSLA") is None, str(answer);
+    }
     stub();
     assert get_stock_sentiment("TSLA") is None and len(sent) == 4;
 }
@@ -231,23 +165,9 @@ test "news maps an article and takes the analysis written for the page symbol" {
     news = ticker_news(
         "aapl", page([article("a1", relevance=8, sources_count=3, analyses=analyses)])
     );
-    assert news
-        == TickerNews(
-            symbol="AAPL",
-            items=[
-                NewsItem(
-                    id="a1",
-                    title="Headline a1",
-                    url="https://publisher.example/a1",
-                    source="publisher.example",
-                    published_at="2026-11-19T05:05:14Z",
-                    relevance=8,
-                    sentiment="negative",
-                    impact="Margin pressure for Apple.",
-                    outlets=3,
-                ),
-            ],
-        );
+    (src, when, impact) = ("publisher.example", "2026-11-19T05:05:14Z", analyses[1][2]);
+    item = NewsItem("a1", "Headline a1", f"https://{src}/a1", src, when, 8, "negative", impact, 3);
+    assert news == TickerNews("AAPL", [item]);
 }
 
 test "news never shows another ticker's analysis on this symbol's page" {
@@ -294,15 +214,11 @@ test "news is None for an empty page or an unexpected payload" {
     assert ticker_news("AAPL", None) is None;
 }
 
-test "get_alphai_news makes no request without a key" {
-    stub();
-    os.environ.pop("ALPHAI_API_KEY");
-    assert get_alphai_news("NOKEY") is None and not sent;
-}
-
-test "get_alphai_news makes no request for a symbol AlphAI cannot have" {
+test "get_alphai_news makes no request without a key, or for a symbol AlphAI cannot have" {
     stub();
     assert get_alphai_news("BINANCE:BTCUSDT") is None and not sent;
+    os.environ.pop("ALPHAI_API_KEY");
+    assert get_alphai_news("NOKEY") is None and not sent;
 }
 
 test "get_alphai_news asks with the key in a header and keeps the answer for an hour" {
@@ -332,17 +248,12 @@ test "get_alphai_news waits ten minutes after a failure before asking about that
     assert get_alphai_news("META") is None and len(sent) == 2;
 }
 
-test "get_alphai_news is None when the key is rate limited" {
-    stub({"": (429, {"detail": "Rate limit exceeded"})});
-    assert get_alphai_news("TSLA") is None;
-}
-
-test "get_alphai_news is None, and waits, when the body is not JSON" {
-    stub({"": (200, None)});
-    assert get_alphai_news("AMD") is None and get_alphai_news("AMD") is None and len(sent) == 1;
-}
-
-test "get_alphai_news is None when the request fails" {
+test "get_alphai_news is None, and waits, when rate limited, the body is no JSON or the request fails" {
+    cases: list[tuple[int, any]] = [(429, {"detail": "Rate limit exceeded"}), (200, None)];
+    for answer in cases {
+        stub({"": answer});
+        assert get_alphai_news("AMD") is None and get_alphai_news("AMD") is None and len(sent) == 1;
+    }
     stub();
     assert get_alphai_news("INTC") is None and len(sent) == 1;
 }
