@@ -14,9 +14,19 @@ import from "lucide-react" {
 
 glob SUGGESTIONS: list[str] = ["AAPL", "NVDA", "MSFT", "TSLA", "AMZN"],
      NAME: str = "block max-w-40 truncate font-semibold rtl:text-right @min-[900px]:max-w-56 text-foreground group-hover:text-brand-ink transition-colors",
-     PILL_STATUS: dict[str, str] = {"triggered": "pill is-brand", "watching": "pill is-up"};
+     PILL_STATUS: dict[str, str] = {"triggered": "pill is-brand", "watching": "pill is-up"},
+     LOGO: str = "logo-well @max-[560px]:hidden",
+     SYMBOL: str = "mono block truncate text-[12px] text-faint",
+     DIM: str = "is-num text-muted-foreground",
+     STORY: str = "group flex items-start gap-3 px-3 py-3 transition-colors hover:bg-hover/50",
+     HEADLINE: str = "line-clamp-2 font-semibold text-foreground group-hover:text-brand-ink transition-colors rtl:text-right",
+     OPEN_ICON: str = "mt-1 size-4 flex-none text-faint opacity-0 transition-opacity group-hover:opacity-100",
+     DAY: dict[str, str] = {"month": "short", "day": "numeric"},
+     SUGGESTION: str = "pill mono h-7 px-3 hover:bg-hover hover:text-foreground",
+     TABLE: str = "data-table @max-[560px]:table-fixed @max-[560px]:[&_td]:px-2 @max-[560px]:[&_th]:px-2",
+     ACTIONS: str = "flex items-center justify-end gap-1";
 
-def Skeleton(rows: int = 4) -> JsxElement {
+def Skeleton -> JsxElement {
     return <div className="row-list" aria-busy="true">
         {[
             <div key={i} className="flex items-center gap-3 px-3.5 py-3.5">
@@ -24,9 +34,22 @@ def Skeleton(rows: int = 4) -> JsxElement {
                 <span className="h-3.5 flex-1 animate-pulse rounded-md bg-hover" />
                 <span className="h-3.5 w-20 animate-pulse rounded-md bg-hover" />
             </div>
-            for i in range(max(1, min(rows, 6)))
+            for i in range(4)
         ]}
     </div>;
+}
+
+def Company(r: WatchlistRow) -> JsxElement {
+    logo = <img src={r.logo} alt="" className="size-full object-contain p-1" />;
+    return <Link to={f"/stocks/{r.symbol}"} className="group flex items-center gap-3">
+        <span className={cx(LOGO, not r.logo and "is-empty")}>
+            {logo if r.logo else r.symbol[0]}
+        </span>
+        <span className="min-w-0">
+            <span dir="auto" className={NAME} title={r.name}>{r.name}</span>
+            <span className={SYMBOL}>{r.symbol}</span>
+        </span>
+    </Link>;
 }
 
 # The starred table and a named list's: the same rows, each with the `actions` its table gives it. Columns
@@ -43,9 +66,7 @@ def StockTable(
         ["is-num @max-[660px]:hidden", "WatchlistTable.headers.marketCap"],
     ];
     return <div className="@container overflow-x-auto rounded-[14px]">
-        <table
-            className="data-table @max-[560px]:table-fixed @max-[560px]:[&_td]:px-2 @max-[560px]:[&_th]:px-2"
-        >
+        <table className={TABLE}>
             <thead>
                 <tr>
                     {[<th key={h[1]} className={h[0]}>{t(h[1])}</th> for h in heads]}
@@ -59,32 +80,7 @@ def StockTable(
                     for r in rows {
                         pill = <ChangePill value={r.change_percent if r.price else None} />;
                         <tr key={r.symbol}>
-                            <td className="max-w-[320px]">
-                                <Link
-                                    to={f"/stocks/{r.symbol}"}
-                                    className="group flex items-center gap-3"
-                                >
-                                    <span
-                                        className={cx("logo-well @max-[560px]:hidden", not r.logo and "is-empty")}
-                                    >
-                                        {<img
-                                            src={r.logo}
-                                            alt=""
-                                            className="size-full object-contain p-1"
-                                        />
-                                            if r.logo
-                                            else r.symbol[0]}
-                                    </span>
-                                    <span className="min-w-0">
-                                        <span dir="auto" className={NAME} title={r.name}>
-                                            {r.name}
-                                        </span>
-                                        <span
-                                            className="mono block truncate text-[12px] text-faint"
-                                        >{r.symbol}</span>
-                                    </span>
-                                </Link>
-                            </td>
+                            <td className="max-w-[320px]"><Company {r} /></td>
                             <td className="is-num font-semibold text-foreground">
                                 <PriceFlash value={r.price} className="px-1">
                                     {money(r.price, r.currency) if r.price else "—"}
@@ -92,17 +88,13 @@ def StockTable(
                                 <div className="mt-1 @min-[560px]:hidden">{pill}</div>
                             </td>
                             <td className="is-num @max-[560px]:hidden">{pill}</td>
-                            <td className="is-num text-muted-foreground @max-[740px]:hidden">
+                            <td className={cx(DIM, "@max-[740px]:hidden")}>
                                 {signed(r.change) if r.price else "—"}
                             </td>
-                            <td className="is-num text-muted-foreground @max-[660px]:hidden">
+                            <td className={cx(DIM, "@max-[660px]:hidden")}>
                                 {compact(r.market_cap) if r.market_cap else "—"}
                             </td>
-                            <td>
-                                <div className="flex items-center justify-end gap-1">
-                                    {actions(r)}
-                                </div>
-                            </td>
+                            <td><div className={ACTIONS}>{actions(r)}</div></td>
                         </tr>
                     }
                 }
@@ -130,55 +122,34 @@ def Alerts(
         </Empty>;
     }
     now = Date.now() / 1000;
+    link = lambda (chunk: str) -> any {
+        <Link key="link" to="/#data" className="text-brand-ink hover:underline">{chunk}</Link>
+    };
     return <>
         {None
             if realtime
             else <p className="px-3 pt-3 pb-1 text-[12.5px] text-faint">
-                {rich(
-                    "AlertsPanel.movedNotice",
-                    {
-                        "link": lambda (chunk: str) -> any {
-                            <Link key="link" to="/#data" className="text-brand-ink hover:underline">
-                                {chunk}
-                            </Link>
-                        },
-                    },
-                )}
+                {rich("AlertsPanel.movedNotice", {"link": link})}
             </p>}
         <ul className="row-list">
             {
                 for a in alerts {
-                    status = "triggered"
-                        if a.triggered
-                        else "paused"
-                            if not realtime
-                            else "expired"
-                                if 0 < a.expires_at < now
-                                else "watching" if a.active else "paused";
+                    live = "expired"
+                        if 0 < a.expires_at < now
+                        else "watching" if a.active else "paused";
+                    status = "triggered" if a.triggered else live if realtime else "paused";
                     said = {"period": a.sma_period, "price": money(a.target_price)};
+                    rule = ("above" if a.condition == "ABOVE" else "below")
+                        + ("Sma" if a.target == "SMA" else "");
+                    date = new(Date, a.expires_at * 1000).toLocaleDateString(locale(), DAY);
+                    until = " · " + t("AlertsPanel.until", {"date": date})
+                        if a.expires_at and not a.triggered
+                        else "";
                     <li key={a.id} className="flex items-center gap-3 px-3 py-2.5">
                         <div className="min-w-0 flex-1">
                             <p className="mono font-semibold text-foreground">{a.symbol}</p>
                             <p className="num truncate text-[12.5px] text-faint">
-                                {t(
-                                    "AlertsPanel."
-                                        + ("above" if a.condition == "ABOVE" else "below")
-                                        + ("Sma" if a.target == "SMA" else ""),
-                                    said,
-                                )}
-                                {" · "
-                                    + t(
-                                        "AlertsPanel.until",
-                                        {
-                                            "date": new(
-                                                Date, a.expires_at * 1000
-                                            ).toLocaleDateString(
-                                                locale(), {"month": "short", "day": "numeric"}
-                                            ),
-                                        },
-                                    )
-                                    if a.expires_at and not a.triggered
-                                    else ""}
+                                {t(f"AlertsPanel.{rule}", said) + until}
                             </p>
                         </div>
                         <span className={PILL_STATUS.get(status, "pill")}>
@@ -209,33 +180,42 @@ def News(news: list[Article]) -> JsxElement {
     return <ul className="row-list">
         {[
             <li key={f"{n.id}-{n.url}"}>
-                <a
-                    href={n.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-start gap-3 px-3 py-3 transition-colors hover:bg-hover/50"
-                >
+                <a href={n.url} target="_blank" rel="noopener noreferrer" className={STORY}>
                     <span className="pill mono mt-0.5 w-16 justify-center">
                         {n.related or "MKT"}
                     </span>
                     <span className="min-w-0 flex-1">
-                        <span
-                            dir="auto"
-                            className="line-clamp-2 font-semibold text-foreground group-hover:text-brand-ink transition-colors rtl:text-right"
-                        >{n.headline}</span>
+                        <span dir="auto" className={HEADLINE}>{n.headline}</span>
                         <span className="mt-1 block truncate text-[12.5px] text-faint">
-                            {n.source}
-                            {f" · {ago(n.datetime)}" if n.datetime else ""}
+                            {n.source + (f" · {ago(n.datetime)}" if n.datetime else "")}
                         </span>
                     </span>
-                    <ArrowUpRight
-                        className="mt-1 size-4 flex-none text-faint opacity-0 transition-opacity group-hover:opacity-100"
-                    />
+                    <ArrowUpRight className={OPEN_ICON} />
                 </a>
             </li>
             for n in news
         ]}
     </ul>;
+}
+
+# The empty starred table: a way to search, and a few symbols to start from
+def NoStars -> JsxElement {
+    return <Empty
+        icon={Star}
+        width="max-w-sm"
+        title={t("WatchlistTableRow.emptyTitle")}
+        body={t("WatchlistTableRow.emptyBody")}
+    >
+        <button type="button" onClick={open_search} className="btn btn-primary mt-3"><Search /> {t(
+            "WatchlistTableRow.searchStocks"
+        )}</button>
+        <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+            {[
+                <Link key={s} to={f"/stocks/{s}"} className={SUGGESTION}>{s}</Link>
+                for s in SUGGESTIONS
+            ]}
+        </div>
+    </Empty>;
 }
 
 # The account's own data shows first; everything from Finnhub arrives behind skeletons and dashes
@@ -287,15 +267,9 @@ def:pub page -> JsxPage {
 
     async can with [starred, ready] entry {
         if ready {
-            try {
-                news = await get_news(
-                    starred.split(",") if starred else [],
-                    t("NewsSources.companyNews"),
-                    t("NewsSources.marketNews"),
-                );
-            } except RemoteError {
-                news = [];
-            }
+            symbols = starred.split(",") if starred else [];
+            (company, market) = (t("NewsSources.companyNews"), t("NewsSources.marketNews"));
+            news = await quiet(get_news(symbols, company, market), []);
         }
     }
 
@@ -357,16 +331,16 @@ def:pub page -> JsxPage {
     if not ready {
         return <Loading />;
     }
+    shown = t("WatchlistPage.symbolCount", {"count": len(items)});
+    fresh = <DataFreshness loc={locale()} realtime={live.realtime} />;
+    pending = len([a for a in alerts if not a.triggered]);
     return <>
         <header className="page-head">
             <div>
                 <h1 className="page-title">{t("WatchlistPage.title")}</h1>
-                <p className="page-sub num flex flex-wrap items-center gap-x-2">{t(
-                    "WatchlistPage.symbolCount", {"count": len(items)}
-                )} <span aria-hidden>·</span> <DataFreshness
-                    loc={locale()}
-                    realtime={live.realtime}
-                /></p>
+                <p className="page-sub num flex flex-wrap items-center gap-x-2">{shown} <span
+                    aria-hidden
+                >·</span> {fresh}</p>
             </div>
             <button type="button" onClick={open_search} className="btn btn-primary"><Plus /> {t(
                 "WatchlistPage.addSymbol"
@@ -441,28 +415,7 @@ def:pub page -> JsxPage {
                         actions={lambda (r: WatchlistRow) -> any { <><ListButton symbol={r.symbol} company={r.name} />{<AlertButton symbol={r.symbol} price={r.price} currency={r.currency} realtime={live.realtime} className="icon-btn" title={t("WatchlistTableRow.setAlertLabel", {"symbol": r.symbol})} aria-label={t("WatchlistTableRow.setAlertLabel", {"symbol": r.symbol})}><Bell /></AlertButton> if has_finnhub_quotes(r.symbol) else <span className="icon-btn opacity-40" title={t("WatchlistTableRow.alertsUnavailable")}><Bell /></span>}<WatchButton symbol={r.symbol} company={r.name} on icon /></> }}
                     />
                         if items
-                        else <Empty
-                            icon={Star}
-                            width="max-w-sm"
-                            title={t("WatchlistTableRow.emptyTitle")}
-                            body={t("WatchlistTableRow.emptyBody")}
-                        >
-                            <button
-                                type="button"
-                                onClick={open_search}
-                                className="btn btn-primary mt-3"
-                            ><Search /> {t("WatchlistTableRow.searchStocks")}</button>
-                            <div className="mt-4 flex flex-wrap justify-center gap-1.5">
-                                {[
-                                    <Link
-                                        key={s}
-                                        to={f"/stocks/{s}"}
-                                        className="pill mono h-7 px-3 hover:bg-hover hover:text-foreground"
-                                    >{s}</Link>
-                                    for s in SUGGESTIONS
-                                ]}
-                            </div>
-                        </Empty>}
+                        else <NoStars />}
                 </Panel>
                 <Panel
                     title={t("WatchlistPage.newsTitle")}
@@ -472,7 +425,7 @@ def:pub page -> JsxPage {
             <Panel
                 title={t("WatchlistPage.alertsTitle")}
                 className="self-start"
-                sub={t("WatchlistPage.alertsSubActive", {"count": len([a for a in alerts if not a.triggered])}) if live.realtime else t("WatchlistPage.alertsSubCloud")}
+                sub={t("WatchlistPage.alertsSubActive", {"count": pending}) if live.realtime else t("WatchlistPage.alertsSubCloud")}
             >
                 <Alerts
                     {alerts}

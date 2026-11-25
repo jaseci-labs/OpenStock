@@ -14,6 +14,10 @@ glob mode: str = "",  # the server's data mode, asked once a visit
      ],
      NAME_INPUT: str = "rounded-full bg-page px-3 text-[13px] shadow-[inset_0_0_0_1px_var(--line)] outline-none placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
      SEGMENT: str = "min-h-9 whitespace-nowrap rounded-[9px] px-1 text-[12px] font-semibold transition-colors min-[400px]:text-[14px]",
+     CLOUD: str = "btn btn-primary h-11 flex-1",
+     PICKED: str = "bg-hover text-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.06)]",
+     PRICE_BOX: str = "flex h-12 items-center gap-2 rounded-[11px] border border-line bg-page px-3 focus-within:border-brand",
+     PRICE_INPUT: str = "num w-full bg-transparent text-lg font-semibold text-foreground outline-none",
      ALERT_FAILURES: dict[str, str] = {
          "notEnoughHistory": "smaNoHistory",
          "historyUnavailable": "smaHistoryUnavailable",
@@ -81,20 +85,16 @@ def:pub use_live(symbols: list[str]) -> Live {
         if not first and document.visibilityState != "visible" {
             return;
         }
-        try {
-            answer = await quotes(symbols);
-            if shown.current == key and answer {
-                found = answer;
-            }
-        } except RemoteError {}
+        answer = await quiet(quotes(symbols), {});
+        if shown.current == key and answer {
+            found = answer;
+        }
     }
 
     async can with [key] entry {
         shown.current = key;
         if mode == "" {
-            try {
-                mode = await data_mode();
-            } except RemoteError {}
+            mode = await quiet(data_mode(), "");
         }
         realtime = mode == "realtime";
         if key == "" or shown.current != key {
@@ -126,6 +126,8 @@ def:pub WatchButton(symbol: str, company: str, on: bool, icon: bool = False) -> 
         added = on;
     }
 
+    said: dict[str, any] = {"symbol": symbol};
+
     async def toggle(e: any) {
         e.preventDefault();
         want = not added;
@@ -146,19 +148,12 @@ def:pub WatchButton(symbol: str, company: str, on: bool, icon: bool = False) -> 
             added = not want;
             toast_error(refused);
         } else {
-            toast_ok(
-                t(
-                    "WatchlistButton.added" if want else "WatchlistButton.removed",
-                    {"symbol": symbol},
-                ),
-            );
+            toast_ok(t("WatchlistButton.added" if want else "WatchlistButton.removed", said));
             changed();
         }
     }
 
-    label = t(
-        "WatchlistButton.removeLabel" if added else "WatchlistButton.addLabel", {"symbol": symbol}
-    );
+    label = t("WatchlistButton.removeLabel" if added else "WatchlistButton.addLabel", said);
     return <button
         type="button"
         onClick={toggle}
@@ -190,7 +185,7 @@ def Segmented(
                 type="button"
                 aria-pressed={value == o[0]}
                 onClick={lambda { onPick(o[0]); }}
-                className={cx(SEGMENT, "bg-hover text-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.06)]" if value == o[0] else "text-faint hover:text-foreground")}
+                className={cx(SEGMENT, PICKED if value == o[0] else "text-faint hover:text-foreground")}
             >{o[1]}</button>
             for o in options
         ]}
@@ -219,6 +214,20 @@ def:pub AlertButton(
     distance = (goal - price) / price * 100 if price > 0 and isFinite(goal) else None;
     met = distance is not None and (distance <= 0 if condition == "ABOVE" else distance >= 0);
     vars = {"symbol": symbol, "condition": condition, "period": period};
+    now: dict[str, any] = {"price": money(price, currency), "distance": signed(distance or 0.0)};
+    hint = "priceUnavailable"
+        if price <= 0
+        else "alreadyMet" if met else "now" if distance is None else "nowWithDistance";
+    m = lambda (k: str) -> str { t("CreateAlertModal." + k) };
+    kinds: list[list[any]] = [["PRICE", m("typePrice")], ["SMA", m("typeSma")]];
+    sides: list[list[any]] = [
+        ["ABOVE", m("crossesAbove" if sma else "risesAbove")],
+        ["BELOW", m("crossesBelow" if sma else "fallsBelow")],
+    ];
+    periods = [[p, t("CreateAlertModal.smaOption", {"period": p})] for p in SMA_PERIODS];
+    on_kind = lambda (v: any) { kind = v; };
+    on_side = lambda (v: any) { condition = v; };
+    on_period = lambda (v: any) { period = v; };
 
     async def submit(e: any) {
         e.preventDefault();
@@ -236,12 +245,8 @@ def:pub AlertButton(
             toast_error(t("CreateAlertModal." + ALERT_FAILURES.get(code, "createFailed"), vars));
             return;
         }
-        toast_ok(
-            t(
-                "CreateAlertModal.createdSma" if sma else "CreateAlertModal.created",
-                {**vars, "price": money(made.target_price, currency)},
-            ),
-        );
+        done = {**vars, "price": money(made.target_price, currency)};
+        toast_ok(t("CreateAlertModal.createdSma" if sma else "CreateAlertModal.created", done));
         open = False;
         changed();
     }
@@ -262,43 +267,32 @@ def:pub AlertButton(
         >
             {<>
                 <div>
-                    <p className="kicker text-brand-ink">{t("CreateAlertModal.kicker")}</p>
+                    <p className="kicker text-brand-ink">{m("kicker")}</p>
                     <h2 className="mono mt-1 text-xl font-bold tracking-tight">{symbol}</h2>
-                    <p className="mt-1 text-[13px] text-faint">
-                        {t("CreateAlertModal.description")}
-                    </p>
+                    <p className="mt-1 text-[13px] text-faint">{m("description")}</p>
                 </div>
                 <form onSubmit={submit} className="flex flex-col gap-4">
+                    <Segmented label={m("alertOn")} value={kind} options={kinds} onPick={on_kind} />
                     <Segmented
-                        label={t("CreateAlertModal.alertOn")}
-                        value={kind}
-                        options={[["PRICE", t("CreateAlertModal.typePrice")], ["SMA", t("CreateAlertModal.typeSma")]]}
-                        onPick={lambda (v: any) { kind = v; }}
-                    />
-                    <Segmented
-                        label={t("CreateAlertModal.conditionLabel")}
+                        label={m("conditionLabel")}
                         value={condition}
-                        options={[["ABOVE", t("CreateAlertModal." + ("crossesAbove" if sma else "risesAbove"))], ["BELOW", t("CreateAlertModal." + ("crossesBelow" if sma else "fallsBelow"))]]}
-                        onPick={lambda (v: any) { condition = v; }}
+                        options={sides}
+                        onPick={on_side}
                     />
                     {<div className="flex flex-col gap-2">
-                        <span className="form-label">{t("CreateAlertModal.smaPeriodLabel")}</span>
+                        <span className="form-label">{m("smaPeriodLabel")}</span>
                         <Segmented
-                            label={t("CreateAlertModal.smaPeriodLabel")}
+                            label={m("smaPeriodLabel")}
                             value={period}
-                            options={[[p, t("CreateAlertModal.smaOption", {"period": p})] for p in SMA_PERIODS]}
-                            onPick={lambda (v: any) { period = v; }}
+                            options={periods}
+                            onPick={on_period}
                         />
-                        <span className="text-[12.5px] text-faint">
-                            {t("CreateAlertModal.smaHint")}
-                        </span>
+                        <span className="text-[12.5px] text-faint">{m("smaHint")}</span>
                     </div>
                         if sma
                         else <label className="flex flex-col gap-2">
-                            <span className="form-label">{t("CreateAlertModal.targetPrice")}</span>
-                            <span
-                                className="flex h-12 items-center gap-2 rounded-[11px] border border-line bg-page px-3 focus-within:border-brand"
-                            >
+                            <span className="form-label">{m("targetPrice")}</span>
+                            <span className={PRICE_BOX}>
                                 <span className="mono text-faint">{currency}</span>
                                 <input
                                     type="number"
@@ -309,56 +303,31 @@ def:pub AlertButton(
                                     autoFocus
                                     value={target}
                                     onInput={lambda (e: any) { target = e.target.value; }}
-                                    className="num w-full bg-transparent text-lg font-semibold text-foreground outline-none"
+                                    className={PRICE_INPUT}
                                 />
                             </span>
                             <span
                                 className={cx("num text-[12.5px]", "text-warn" if met else "text-faint")}
-                            >
-                                {t("CreateAlertModal.priceUnavailable")
-                                    if price <= 0
-                                    else t("CreateAlertModal.alreadyMet", vars)
-                                        if met
-                                        else t(
-                                            "CreateAlertModal.now",
-                                            {"price": money(price, currency)},
-                                        )
-                                            if distance is None
-                                            else t(
-                                                "CreateAlertModal.nowWithDistance",
-                                                {
-                                                    "price": money(price, currency),
-                                                    "distance": signed(distance),
-                                                },
-                                            )}
-                            </span>
+                            >{t(f"CreateAlertModal.{hint}", {**vars, **now})}</span>
                         </label>}
                     <button
                         type="submit"
                         disabled={busy or (not sma and not goal > 0)}
                         className="btn btn-primary h-11"
-                    >
-                        {t("CreateAlertModal.setting" if busy else "CreateAlertModal.setAlert")}
-                    </button>
+                    >{m("setting" if busy else "setAlert")}</button>
                 </form>
             </>
                 if realtime
                 else <div>
                     {#* Alerts are an OpenStock Cloud feature; the free hourly site points people to it *#}
                     <p className="kicker text-brand-ink">OpenStock Cloud</p>
-                    <h2 className="mt-1 text-xl font-bold tracking-tight">
-                        {t("CreateAlertModal.cloudTitle")}
-                    </h2>
+                    <h2 className="mt-1 text-xl font-bold tracking-tight">{m("cloudTitle")}</h2>
                     <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
-                        {t("CreateAlertModal.cloudBody")}
+                        {m("cloudBody")}
                     </p>
                     <div className="mt-5 flex flex-wrap gap-2">
-                        <Link to="/#data" className="btn btn-primary h-11 flex-1">
-                            {t("CreateAlertModal.seeCloud")}
-                        </Link>
-                        <Link to="/#self-host" className="btn btn-ghost h-11">
-                            {t("CreateAlertModal.selfHost")}
-                        </Link>
+                        <Link to="/#data" className={CLOUD}>{m("seeCloud")}</Link>
+                        <Link to="/#self-host" className="btn btn-ghost h-11">{m("selfHost")}</Link>
                     </div>
                 </div>}
         </Dialog>
@@ -378,9 +347,7 @@ def:pub ListButton(symbol: str, company: str) -> JsxElement {
 
     async def show {
         (open, made, name) = (True, None, "");
-        try {
-            lists = await get_lists();
-        } except RemoteError {}
+        lists = await quiet(get_lists(), lists);
     }
 
     async def add(to: ListSummary, fresh: bool) {
@@ -422,27 +389,19 @@ def:pub ListButton(symbol: str, company: str) -> JsxElement {
         await add(to, True);
     }
 
+    title = t("NamedLists.menuTitle", {"symbol": symbol});
+    label = t("NamedLists.menuLabel", {"symbol": symbol});
     return <>
-        <button
-            type="button"
-            className="icon-btn"
-            onClick={show}
-            title={t("NamedLists.menuTitle", {"symbol": symbol})}
-            aria-label={t("NamedLists.menuLabel", {"symbol": symbol})}
-        ><ListPlus /></button>
+        <button type="button" className="icon-btn" onClick={show} {title} aria-label={label}>
+            <ListPlus />
+        </button>
         {#* Not dismissible while a request is in flight: closing would forget a list about to exist *#}
         <Dialog
             {open}
-            onClose={lambda {
-                if not busy {
-                    open = False;
-                }
-            }}
+            onClose={lambda { open = open and busy; }}
             className="grid gap-4 p-6 sm:max-w-sm"
         >
-            <h2 className="text-lg leading-none font-semibold">
-                {t("NamedLists.menuTitle", {"symbol": symbol})}
-            </h2>
+            <h2 className="text-lg leading-none font-semibold">{title}</h2>
             {<p className="text-[12px] text-faint">{t("NamedLists.menuEmpty")}</p>
                 if not lists
                 else <div className="flex flex-wrap gap-1.5">

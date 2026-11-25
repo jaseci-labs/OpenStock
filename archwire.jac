@@ -134,7 +134,7 @@ graph import {
     }
     content.changelog ++> ui.site { RELEASES }
     api.seo ++> ui.site { repo_stats }
-    model ++> ui.market { Market, Quote, DailyQuote, yahoo_app_symbol }
+    model ++> ui.market { Market, Pulse, Quote, DailyQuote, yahoo_app_symbol }
     api.quotes ++> ui.market { live_quotes, yahoo_daily_quotes, is_realtime }
     api.markets ++> ui.market { get_market }
     content.sponsors ++> ui.shell { sidebar_sponsors, SIDEBAR_SPONSOR_SLOTS }
@@ -318,6 +318,7 @@ graph import {
         problem,
         changed,
         ago,
+        quiet,
         NAME_INPUT,
     }
     ui.stocks ++> pages.stocks { use_live, Empty, WatchButton, AlertButton, ListButton, ago, quiet }

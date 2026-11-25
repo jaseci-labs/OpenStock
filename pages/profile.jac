@@ -4,12 +4,20 @@ import from "lucide-react" { Bell, KeyRound, ShieldCheck, Star }
 
 # The profile's fields in the form's order, each with what an account without one starts from
 glob FIELDS: dict[str, str] = {
-    "name": "",
-    "country": "US",
-    "investmentGoals": "Growth",
-    "riskTolerance": "Medium",
-    "preferredIndustry": "Technology",
-};
+         "name": "",
+         "country": "US",
+         "investmentGoals": "Growth",
+         "riskTolerance": "Medium",
+         "preferredIndustry": "Technology",
+     },
+     AVATAR: str = "grid size-14 flex-none place-items-center rounded-full bg-brand-soft text-[22px] font-bold text-brand-ink",
+     NAME: str = "truncate text-[22px] font-bold tracking-[-0.03em] rtl:text-right",
+     # The chip groups by their place in the form, each with its label's message
+     CHIPS: list[tuple[int, list[str]]] = [
+         (2, ["investmentGoals", "investmentGoal"]),
+         (3, ["riskTolerance", "riskTolerance"]),
+         (4, ["industries", "preferredIndustry"]),
+     ];
 
 def kept -> list[str] {
     return [me().get(k) or FIELDS[k] for k in FIELDS];
@@ -25,6 +33,7 @@ def:pub page -> JsxPage {
 
     user = me();
     email = user.get("email", "");
+    name = user.get("name", "");
     dirty = "|".join(form) != "|".join(kept());
     short = len(form[0].strip()) < 2;
     put = lambda (i: int, v: str) { form = form[:i] + [v] + form[i + 1:]; };
@@ -79,14 +88,9 @@ def:pub page -> JsxPage {
     return <>
         <section className="hatch">
             <div className="card flex flex-wrap items-center gap-4 p-5">
-                <span
-                    className="grid size-14 flex-none place-items-center rounded-full bg-brand-soft text-[22px] font-bold text-brand-ink"
-                >{user.get("name", "")[:1].upper() or "?"}</span>
+                <span className={AVATAR}>{name[:1].upper() or "?"}</span>
                 <div className="min-w-0 flex-1">
-                    <h1
-                        dir="auto"
-                        className="truncate text-[22px] font-bold tracking-[-0.03em] rtl:text-right"
-                    >{user.get("name", "")}</h1>
+                    <h1 dir="auto" className={NAME}>{name}</h1>
                     <p className="truncate text-faint">{email}</p>
                 </div>
             </div>
@@ -119,24 +123,16 @@ def:pub page -> JsxPage {
                         value={form[1]}
                         onPick={lambda (v: str) { put(1, v); }}
                     />
-                    <ChoiceChips
-                        group="investmentGoals"
-                        label={t("PreferenceFields.investmentGoal")}
-                        value={form[2]}
-                        onPick={lambda (v: str) { put(2, v); }}
-                    />
-                    <ChoiceChips
-                        group="riskTolerance"
-                        label={t("PreferenceFields.riskTolerance")}
-                        value={form[3]}
-                        onPick={lambda (v: str) { put(3, v); }}
-                    />
-                    <ChoiceChips
-                        group="industries"
-                        label={t("PreferenceFields.preferredIndustry")}
-                        value={form[4]}
-                        onPick={lambda (v: str) { put(4, v); }}
-                    />
+                    {[
+                        <ChoiceChips
+                            key={c[0]}
+                            group={c[0]}
+                            label={t(f"PreferenceFields.{c[1]}")}
+                            value={form[i]}
+                            onPick={lambda (v: str) { put(i, v); }}
+                        />
+                        for (i, c) in CHIPS
+                    ]}
                     <div className="flex items-center gap-3 pt-1">
                         <SubmitButton
                             busy={busy or not dirty}
@@ -161,9 +157,7 @@ def:pub page -> JsxPage {
                         <li className="flex items-center gap-3 px-3.5 py-3">
                             <span className="bento-ico"><KeyRound /></span>
                             <span className="flex-1 font-semibold">
-                                {t("ProfilePage.methodCredential")
-                                    if email
-                                    else user.get("name", "")}
+                                {t("ProfilePage.methodCredential") if email else name}
                             </span>
                             <span className="pill is-up">{t("ProfilePage.connected")}</span>
                         </li>
