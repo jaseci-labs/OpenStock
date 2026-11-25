@@ -152,10 +152,6 @@ def parse_guides(text: str) -> list[Guide] {
 }
 
 def find_guide(slug: str) -> Guide | None {
-    for guide in GUIDES {
-        if guide.slug == slug {
-            return guide;
-        }
-    }
-    return None;
+    found = [g for g in GUIDES if g.slug == slug];
+    return found[0] if found else None;
 }
