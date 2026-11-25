@@ -1,26 +1,11 @@
-glob GICS: list[str] = [
-    "Communication Services",
-    "Consumer Discretionary",
-    "Consumer Staples",
-    "Energy",
-    "Financials",
-    "Health Care",
-    "Industrials",
-    "Information Technology",
-    "Materials",
-    "Real Estate",
-    "Utilities",
-];
+glob GICS: list[str] = [g.strip() for g in """Communication Services, Consumer Discretionary,
+Consumer Staples, Energy, Financials, Health Care, Industrials, Information Technology, Materials,
+Real Estate, Utilities""".split(",")];
 
 test "tickers cover the S&P 500 and the Nasdaq-100, with every field on every row" {
     assert 500 <= len(TICKERS) < 600;
     for t in TICKERS {
-        assert t.symbol
-            and t.name
-            and t.exchange
-            and t.sub_industry
-            and t.cik
-            and t.indexes, t.symbol;
+        assert all([t.symbol, t.name, t.exchange, t.sub_industry, t.cik, t.indexes]), t.symbol;
         assert t.sector in GICS, t.symbol;
         assert t.symbol.replace(".", "").isalnum(), t.symbol;
     }
@@ -141,13 +126,9 @@ test "site_url, sitemap.xml and robots.txt use BETTER_AUTH_URL without a trailin
         in xml;
     assert "<loc>https://openstock.example/s/BRK.B</loc><changefreq>weekly</changefreq><priority>0.6</priority>"
         in xml;
-    lines = robots().split("\n");
+    (lines, o) = (robots().split("\n"), "https://openstock.example");
     assert lines[0] == "User-Agent: *" and "Allow: /s/" in lines and "Disallow: /stocks" in lines;
-    assert lines[-3:] == [
-        "Host: https://openstock.example",
-        "Sitemap: https://openstock.example/sitemap.xml",
-        "",
-    ];
+    assert lines[-3:] == [f"Host: {o}", f"Sitemap: {o}/sitemap.xml", ""];
     del os.environ["BETTER_AUTH_URL"];
     assert site_url() == "http://localhost:8000";
 }

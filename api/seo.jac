@@ -4,7 +4,6 @@ import json;
 import os;
 import threading;
 import time;
-import urllib.request;
 import from urllib.parse { unquote }
 
 # SEC fair-access rules: https://www.sec.gov/os/accessing-edgar-data
@@ -79,31 +78,20 @@ def:pub ticker_page(raw: str) -> TickerPage | None {
     }
     i = TICKERS.index(t);
     origin = site_url();
-    url = origin + ticker_path(t.symbol);
-    title = f"{t.name} ({t.symbol}) stock chart and SEC filings";
+    (url, crumb) = (origin + ticker_path(t.symbol), f"{t.name} ({t.symbol})");
     intro = ticker_intro(t);
-    trail = [
-        ("OpenStock", f"{origin}/"),
-        ("US stocks", f"{origin}/s"),
-        (t.sector, f"{origin}/s#{sector_anchor(t.sector)}"),
-        (f"{t.name} ({t.symbol})", url),
-    ];
+    title = f"{crumb} stock chart and SEC filings";
+    trail = [("OpenStock", f"{origin}/"), ("US stocks", f"{origin}/s")];
+    trail += [(t.sector, f"{origin}/s#{sector_anchor(t.sector)}"), (crumb, url)];
     company = company_browse_url(t.cik);
-    return TickerPage(
-        ticker=t,
-        url=url,
-        title=title,
-        intro=intro,
-        # Same sector: the 8 that follow it in symbol order, wrapping round to those before.
-        peers=[o for o in TICKERS[i + 1:] + TICKERS[:i] if o.sector == t.sector][:8],
-        prev=TICKERS[i - 1] if i > 0 else None,
-        next=TICKERS[i + 1] if i < len(TICKERS) - 1 else None,
-        json_ld=json_ld(
-            breadcrumbs(trail),
-            ld("Corporation", name=t.name, tickerSymbol=t.symbol, url=company, industry=t.sector),
-            ld("WebPage", name=title, description=intro, url=url, isPartOf=website(origin)),
-        ),
-    );
+    corp = ld("Corporation", name=t.name, tickerSymbol=t.symbol, url=company, industry=t.sector);
+    webpage = ld("WebPage", name=title, description=intro, url=url, isPartOf=website(origin));
+    # Same sector: the 8 that follow it in symbol order, wrapping round to those before.
+    peers = [o for o in TICKERS[i + 1:] + TICKERS[:i] if o.sector == t.sector][:8];
+    prev = TICKERS[i - 1] if i > 0 else None;
+    after = TICKERS[i + 1] if i + 1 < len(TICKERS) else None;
+    graph_ld = json_ld(breadcrumbs(trail), corp, webpage);
+    return TickerPage(t, url, title, intro, peers, prev, after, graph_ld);
 }
 
 def ld(kind: str, **props: any) -> dict[str, any] {
@@ -148,11 +136,8 @@ def:pub guide_ld(slug: str) -> str {
         ld("Question", name=f.question, acceptedAnswer=ld("Answer", text=f.answer))
         for f in guide.faqs
     ];
-    society = ld(
-        "Organization", name="Open Dev Society", url="https://github.com/Open-Dev-Society"
-    );
     article = ld("Article", headline=guide.title, description=guide.description, url=url);
-    article["author"] = society;
+    article["author"] = ld("Organization", name="Open Dev Society", url=REPO_URL.rsplit("/", 1)[0]);
     article["publisher"] = ld("Organization", name="OpenStock", url=origin);
     return json_ld(breadcrumbs(trail), ld("FAQPage", mainEntity=faqs), article);
 }
@@ -188,24 +173,21 @@ def pick_filing(recent: dict[str, any], forms: list[str], cik: str) -> Filing | 
 def parse_submissions(cik: str, body: dict[str, any]) -> EdgarCompany {
     recent: dict[str, any] = body.get("filings", {}).get("recent", {});
     state: str = body.get("stateOfIncorporation", "");
-    return EdgarCompany(
-        sic=body.get("sic", ""),
-        sic_description=body.get("sicDescription", ""),
-        fiscal_year_end=format_fiscal_year_end(body.get("fiscalYearEnd", "")),
-        state_of_incorporation=STATES.get(state, state),
-        annual=pick_filing(recent, ANNUAL_FORMS, cik),
-        quarterly=pick_filing(recent, QUARTERLY_FORMS, cik),
-        filings_url=company_browse_url(cik),
-    );
+    (sic, about) = (body.get("sic", ""), body.get("sicDescription", ""));
+    year_end = format_fiscal_year_end(body.get("fiscalYearEnd", ""));
+    (annual, quarterly) = [pick_filing(recent, f, cik) for f in [ANNUAL_FORMS, QUARTERLY_FORMS]];
+    state = STATES.get(state, state);
+    return EdgarCompany(sic, about, year_end, state, annual, quarterly, company_browse_url(cik));
 }
 
-def get_json(url: str, agent: str, timeout: int) -> any {
-    request = urllib.request.Request(
-        url, headers={"User-Agent": agent, "Accept": "application/json"}
+def get_json(url: str, agent: str, timeout: float) -> any {
+    (status, body) = fetch_text(
+        url, {"User-Agent": agent, "Accept": "application/json"}, None, timeout
     );
-    with urllib.request.urlopen(request, timeout=timeout) as response {
-        return json.loads(response.read());
+    if not 200 <= status < 300 {
+        raise RuntimeError(f"HTTP Error {status}");
     }
+    return json.loads(body);
 }
 
 """A company's facts from SEC EDGAR's submissions feed, or None when EDGAR does not answer."""
@@ -258,10 +240,9 @@ def sitemap_entries(origin: str) -> list[tuple[str, str, float]] {
     entries: list[tuple[str, str, float]] = [];
     paths = [f"/compare/{g.slug}" for g in GUIDES] + [ticker_path(t.symbol) for t in TICKERS];
     for path in PUBLIC_EXACT_PATHS + paths {
-        stock = path.startswith("/s/");
-        guide = path.startswith("/compare");
-        priority = 1.0 if path == "/" else 0.6 if stock else 0.7 if guide else 0.5;
-        entries.append((origin.rstrip("/") + path, "weekly" if stock else "monthly", priority));
+        (stock, guide) = (path.startswith("/s/"), path.startswith("/compare"));
+        rank = 1.0 if path == "/" else 0.6 if stock else 0.7 if guide else 0.5;
+        entries.append((origin.rstrip("/") + path, "weekly" if stock else "monthly", rank));
     }
     return entries;
 }

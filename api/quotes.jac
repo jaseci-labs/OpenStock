@@ -7,9 +7,7 @@ import re;
 import sys;
 import threading;
 import time;
-import urllib.error;
 import urllib.parse;
-import urllib.request;
 import from datetime { datetime, timedelta, timezone }
 import from stdjac { consume_limit }
 
@@ -62,19 +60,10 @@ def finnhub_keys -> list[str] {
     return [k.strip() for k in pool.split(",") if k.strip()];
 }
 
-def urlopen_text(url: str, headers: dict[str, str]) -> tuple[int, str] {
-    try {
-        with urllib.request.urlopen(
-            urllib.request.Request(url, headers=headers), timeout=FETCH_TIMEOUT
-        ) as resp {
-            return (resp.status, resp.read().decode());
-        }
-    } except urllib.error.HTTPError as e {
-        return (e.code, e.read().decode());
-    }
-}
-
-glob http_get: Callable[[str, dict[str, str]], tuple[int, str]] = urlopen_text,  # tests put a fake here
+# tests put a fake here
+glob http_get: Callable[[str, dict[str, str]], tuple[int, str]] = lambda (
+         url: str, headers: dict[str, str]
+     ) -> tuple[int, str] { fetch_text(url, headers, None, FETCH_TIMEOUT) },
      cache: dict[str, Cached] = {},
      next_key: int = 0,
      slots: threading.Semaphore = threading.Semaphore(
@@ -158,11 +147,8 @@ def refresh(url: str, ttl: int) -> any {
     } except Exception as e {
         # A stalling endpoint fails fast for a minute instead of costing every visitor the full timeout.
         # A stale value keeps being served, but its next refresh also waits out the cool-down.
-        old = cache.get(url);
-        until = time.time() + FAILURE_TTL;
-        store(
-            url, Cached(old.value, until) if old and not old.failed else Cached(None, until, True)
-        );
+        (old, t) = (cache.get(url), time.time() + FAILURE_TTL);
+        store(url, Cached(old.value, t) if old and not old.failed else Cached(None, t, True));
         raise e;
     }
 }
@@ -255,13 +241,8 @@ def:pub get_company_profile(symbol: str) -> Profile | None {
         return None;
     }
     cap = p.get("marketCapitalization");
-    return Profile(
-        *[
-            str(p.get(k) or "")
-            for k in ["name", "ticker", "currency", "exchange", "logo", "finnhubIndustry", "weburl"]
-        ],
-        market_cap=float(cap) if is_num(cap) else None,
-    );
+    fields = "name ticker currency exchange logo finnhubIndustry weburl".split();
+    return Profile(*[str(p.get(k) or "") for k in fields], float(cap) if is_num(cap) else None);
 }
 
 """The indicated annual dividend yield, where Finnhub has one."""
@@ -269,11 +250,9 @@ def:pub get_stock_metrics(symbol: str) -> float | None {
     if not has_finnhub_company_data(symbol) {
         return None;
     }
-    metrics = finnhub(
-        "stock metrics", symbol, f"/stock/metric?symbol={enc(symbol)}&metric=all", 3600
-    );
-    dividend_yield = dig(metrics, "metric", "dividendYieldIndicatedAnnual");
-    return float(dividend_yield) if is_num(dividend_yield) else None;
+    m = finnhub("stock metrics", symbol, f"/stock/metric?symbol={enc(symbol)}&metric=all", 3600);
+    found = dig(m, "metric", "dividendYieldIndicatedAnnual");
+    return float(found) if is_num(found) else None;
 }
 
 """symbol -> TradingView exchange for every US listing, from one daily download of Finnhub's US symbol list (~31k
@@ -333,13 +312,9 @@ def daily_quote_from_chart(chart: any, fallback_currency: str = "USD") -> DailyQ
     prev = closes[-2] if len(closes) > 1 else 0.0;
     price = num(meta.get("regularMarketPrice"), closes[-1]);
     change = num(meta.get("fulldayChange"), price - prev if prev else 0.0);
-    return DailyQuote(
-        price,
-        change,
-        num(meta.get("regularMarketChangePercent"), change / prev * 100 if prev else 0.0),
-        meta.get("currency") or fallback_currency,
-        meta.get("longName") or meta.get("shortName") or "",
-    );
+    pct = num(meta.get("regularMarketChangePercent"), change / prev * 100 if prev else 0.0);
+    name = meta.get("longName") or meta.get("shortName") or "";
+    return DailyQuote(price, change, pct, meta.get("currency") or fallback_currency, name);
 }
 
 def yahoo_daily_quote(symbol: str) -> DailyQuote | None {
@@ -403,31 +378,18 @@ def daily_closes(symbol: str) -> Closes | None {
 }
 
 def watchlist_row(symbol: str, yahoo: DailyQuote | None) -> WatchlistRow {
-    if yahoo {
-        return WatchlistRow(
-            symbol,
-            yahoo.price,
-            yahoo.change,
-            yahoo.change_percent,
-            yahoo.currency,
-            yahoo.name or symbol,
-        );
+    p = Profile();
+    y = yahoo;
+    if y is None {
+        covered = has_finnhub_quotes(symbol);
+        q = (get_quote(symbol, quote_ttl()) if covered else None) or Quote();
+        p = (get_company_profile(symbol) if covered else None) or p;
+        y = DailyQuote(q.price, q.change, q.change_percent, p.currency or "USD", p.name);
     }
-    covered = has_finnhub_quotes(symbol);
-    q = (get_quote(symbol, quote_ttl()) if covered else None) or Quote();
-    p = (get_company_profile(symbol) if covered else None) or Profile();
     # pe_ratio stays 0: Finnhub's quote and profile2 don't give a real-time P/E, and the metric endpoint would cost
     # another call per symbol.
-    return WatchlistRow(
-        symbol,
-        q.price,
-        q.change,
-        q.change_percent,
-        p.currency or "USD",
-        p.name or symbol,
-        p.logo,
-        p.market_cap,
-    );
+    (c, n) = (y.currency, y.name or symbol);
+    return WatchlistRow(symbol, y.price, y.change, y.change_percent, c, n, p.logo, p.market_cap);
 }
 
 """Price, change, market cap and name for each symbol. Finnhub free doesn't price Tadawul or Warsaw; Yahoo does

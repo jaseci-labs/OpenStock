@@ -27,6 +27,7 @@ graph import {
     }
     model ++> api.markets { Market, Pulse, Group, Clock, MarketSession, session_of }
     api.fetch ++> api.insights | api.ai | api.kit { request_json }
+    api.fetch ++> api.quotes | api.seo { fetch_text }
     insight_model ++> api.insights { SourceInsight, StockSentiment, NewsItem, TickerNews }
     model ++> api.portfolio {
         Quote,
