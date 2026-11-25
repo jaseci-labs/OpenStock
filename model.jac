@@ -306,7 +306,15 @@ def is_sma_period(period: int) -> bool {
 
 """Mean of the last `period` closes; None until there are that many."""
 def sma(closes: list[float], period: int) -> float | None {
-    return sum(closes[-period:]) / period if 1 <= period <= len(closes) else None;
+    if not 1 <= period <= len(closes) {
+        return None;
+    }
+    # A loop in place of sum(closes[-period:]): no copy of the closes, added in the order the original adds them.
+    total = 0.0;
+    for i in range(len(closes) - period, len(closes)) {
+        total += closes[i];
+    }
+    return total / period;
 }
 
 """Which side of the average the price is on: "ABOVE", "BELOW", or "" exactly on it, which is neither, so it keeps
