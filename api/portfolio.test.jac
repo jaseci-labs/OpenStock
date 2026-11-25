@@ -208,13 +208,7 @@ test "a caller deletes their own alert, and never someone else's" {
     remove(theirs);
 }
 
-test "alerts are refused where Cloud features are off" {
-    fresh();
-    os.environ["NEXT_PUBLIC_OPENSTOCK_DATA_MODE"] = "cached";
-    assert create_alert("AAPL", "ABOVE", 200.0).error == "alertsOff" and alerts() == [];
-}
-
-test "alerts are refused for what the checker could never price, and for untrusted input" {
+test "alerts are refused for what the checker could never price, for untrusted input, and in cached mode" {
     fresh();
     assert create_alert("RELIANCE.NS", "ABOVE", 1000.0).error == "marketUnsupported";
     # A symbol could carry markup into alert emails
@@ -222,7 +216,8 @@ test "alerts are refused for what the checker could never price, and for untrust
     assert create_alert("AAPL", "SIDEWAYS", 1.0).error == "conditionInvalid";
     assert [create_alert("AAPL", "ABOVE", p).error for p in [0.0, -5.0, float("inf")]]
         == ["priceInvalid"] * 3;
-    assert alerts() == [];
+    os.environ["NEXT_PUBLIC_OPENSTOCK_DATA_MODE"] = "cached";
+    assert create_alert("AAPL", "ABOVE", 200.0).error == "alertsOff" and alerts() == [];
 }
 
 test "an alert stores only validated fields, so callers cannot pre-trigger or extend it" {
@@ -254,10 +249,7 @@ test "an SMA alert answers with a code the modal can translate when the history 
     assert sma_alert(period=200).error == "notEnoughHistory";
     history = Closes();  # Yahoo has no data for the symbol
     assert sma_alert(period=20).error == "notEnoughHistory" and alerts() == [];
-}
-
-test "an unreachable history is told apart, so the modal can say to try again" {
-    fresh();
+    # An unreachable history is told apart, so the modal can say to try again
     history = None;
     assert sma_alert(period=20).error == "historyUnavailable" and alerts() == [];
 }
@@ -266,9 +258,7 @@ test "an SMA alert takes its side from the Finnhub quote the checker uses, not Y
     fresh();
     quoted = Quote(price=100.0);  # below the average, while Yahoo still says above
     assert sma_alert().error == "" and alerts()[0].last_side == "BELOW";
-}
-
-test "an SMA alert falls back to Yahoo's price only when Finnhub has none" {
+    # Yahoo's price only when Finnhub has none
     fresh();
     quoted = None;
     assert sma_alert().error == "" and alerts()[0].last_side == "ABOVE";

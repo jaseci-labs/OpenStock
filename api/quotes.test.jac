@@ -14,12 +14,13 @@ def fake_get(url: str, headers: dict[str, str]) -> tuple[int, str] {
     return (404, "");
 }
 
+def set_keys(pool: str, public: str = "", single: str = "") {
+    (os.environ["FINNHUB_API_KEYS"], os.environ["NEXT_PUBLIC_FINNHUB_API_KEY"]) = (pool, public);
+    os.environ["FINNHUB_API_KEY"] = single;
+}
+
 def serve(table: dict[str, tuple[int, str]], keys: str = "k1") {
-    (
-        os.environ["FINNHUB_API_KEYS"],
-        os.environ["NEXT_PUBLIC_FINNHUB_API_KEY"],
-        os.environ["FINNHUB_API_KEY"],
-    ) = (keys, "", "");
+    set_keys(keys);
     http_get = fake_get;
     replies = table;
     asked.clear();
@@ -27,14 +28,14 @@ def serve(table: dict[str, tuple[int, str]], keys: str = "k1") {
     cache.clear();
 }
 
-def chart_json(closes: list[float | None], meta: dict[str, any] = {}) -> str {
+def chart_json(closes: list[float | None], **meta: any) -> str {
     return json.dumps({
         "chart": {"result": [{"meta": meta, "indicators": {"quote": [{"close": closes}]}}]},
     });
 }
 
-def chart(closes: list[float | None], meta: dict[str, any] = {}) -> any {
-    return json.loads(chart_json(closes, meta))["chart"]["result"][0];
+def chart(closes: list[float | None], **meta: any) -> any {
+    return json.loads(chart_json(closes, **meta))["chart"]["result"][0];
 }
 
 def near(a: float, b: float) -> bool {
@@ -43,7 +44,7 @@ def near(a: float, b: float) -> bool {
 
 test "daily quote compares the last two closes, skipping gaps" {
     q = daily_quote_from_chart(
-        chart([25.0, 26.0, None, 26.52], {"currency": "SAR", "shortName": "Saudi Arabian Oil Co."})
+        chart([25.0, 26.0, None, 26.52], currency="SAR", shortName="Saudi Arabian Oil Co.")
     );
     assert q is not None
         and q.price == 26.52
@@ -53,22 +54,14 @@ test "daily quote compares the last two closes, skipping gaps" {
 }
 
 test "daily quote prefers the long name (GPW short names look like 'PKN C.XWAR PLN')" {
-    q = daily_quote_from_chart(
-        chart(
-            [147.0, 146.38],
-            {"currency": "PLN", "shortName": "PKN C.XWAR PLN", "longName": "Orlen S.A."},
-        ),
-    );
+    meta = {"currency": "PLN", "shortName": "PKN C.XWAR PLN", "longName": "Orlen S.A."};
+    q = daily_quote_from_chart(chart([147.0, 146.38], **meta));
     assert q is not None and q.currency == "PLN" and q.name == "Orlen S.A.";
 }
 
 test "daily quote prefers Yahoo's own day change (TASI sends a single daily bar)" {
-    meta: dict[str, any] = {
-        "regularMarketPrice": 9921.5,
-        "fulldayChange": -101.97,
-        "regularMarketChangePercent": -1.017,
-    };
-    q = daily_quote_from_chart(chart([9921.5], meta));
+    meta = {"regularMarketPrice": 9921.5, "fulldayChange": -101.97};
+    q = daily_quote_from_chart(chart([9921.5], regularMarketChangePercent=-1.017, **meta));
     assert q is not None and (q.price, q.change, q.change_percent) == (9921.5, -101.97, -1.017);
 }
 
@@ -92,16 +85,15 @@ test "prices Yahoo's markets by the symbol asked for, and nothing else" {
 }
 
 test "maps alert symbols to Yahoo chart symbols" {
-    assert [yahoo_chart_symbol(s) for s in ["AAPL", "brk.b", "BINANCE:BTCUSDT"]] == [
-        "AAPL",
-        "BRK-B",
-        "BTC-USD",
+    got = [
+        yahoo_chart_symbol(s)
+        for s in "AAPL brk.b BINANCE:BTCUSDT BINANCE:ETHBTC 2222.SR".split()
     ];
-    assert [yahoo_chart_symbol(s) for s in ["BINANCE:ETHBTC", "2222.SR", ""]] == [None, None, None];
+    assert got == ["AAPL", "BRK-B", "BTC-USD", None, None] and yahoo_chart_symbol("") is None;
 }
 
 test "reads closes oldest first, skipping gaps, with Yahoo's latest price" {
-    assert closes_from_chart(chart([10.0, None, 11.0, 0.0, 12.5], {"regularMarketPrice": 12}))
+    assert closes_from_chart(chart([10.0, None, 11.0, 0.0, 12.5], regularMarketPrice=12))
         == Closes([10.0, 11.0, 12.5], 12.0);
 }
 
@@ -111,9 +103,7 @@ test "falls back to the last close for the price, and to None for an empty chart
 }
 
 test "daily closes come from a good response" {
-    serve({
-        "AAPL?interval=1d&range=1y": (200, chart_json([1.0, 2.0, 3.0], {"regularMarketPrice": 3})),
-    });
+    serve({"AAPL?interval=1d&range=1y": (200, chart_json([1.0, 2.0, 3.0], regularMarketPrice=3))});
     assert daily_closes("AAPL") == Closes([1.0, 2.0, 3.0], 3.0);
 }
 
@@ -142,16 +132,11 @@ test "reads the data mode at run time" {
 }
 
 test "reads the key pool from the first variable that is set" {
-    env = os.environ;
-    (env["FINNHUB_API_KEYS"], env["NEXT_PUBLIC_FINNHUB_API_KEY"], env["FINNHUB_API_KEY"]) = (
-        "",
-        "",
-        "solo",
-    );
+    set_keys("", "", "solo");
     assert finnhub_keys() == ["solo"];
-    env["NEXT_PUBLIC_FINNHUB_API_KEY"] = "pub";
+    set_keys("", "pub", "solo");
     assert finnhub_keys() == ["pub"];
-    env["FINNHUB_API_KEYS"] = " a, b ,,c ";
+    set_keys(" a, b ,,c ", "pub", "solo");
     assert finnhub_keys() == ["a", "b", "c"];
 }
 
@@ -215,7 +200,7 @@ test "polled quotes cost a signed-in caller one use per symbol, 300 a minute" {
 
 test "watchlist rows are priced from Yahoo or Finnhub, and zero where neither covers" {
     serve({
-        "PKN.WA": (200, chart_json([100.0, 110.0], {"longName": "Orlen S.A."})),
+        "PKN.WA": (200, chart_json([100.0, 110.0], longName="Orlen S.A.")),
         "quote?symbol=AAPL": (200, '{"c": 190.5, "d": 1.5, "dp": 0.79}'),
         "profile2?symbol=AAPL": (
             200,
@@ -240,23 +225,15 @@ test "reads the dividend yield and the US listing's exchange" {
     assert get_stock_metrics("KO") == 3.1
         and get_stock_metrics("AAPL") is None
         and get_stock_metrics("BINANCE:BTCUSDT") is None;
-    assert [get_tradingview_exchange(s) for s in ["aapl", "SPY", "X", "7203.T"]] == [
-        "NASDAQ",
-        "AMEX",
-        None,
-        None,
-    ];
+    got = [get_tradingview_exchange(s) for s in ["aapl", "SPY", "X", "7203.T"]];
+    assert got == ["NASDAQ", "AMEX", None, None];
     assert len([url for url in asked if "exchange=US" in url]) == 1;
 }
 
 def article(id: int, headline: str, when: int) -> dict[str, any] {
-    return {
-        "id": id,
-        "headline": f" {headline} ",
-        "summary": "s" * 300,
-        "url": f"https://news/{id}",
-        "datetime": when,
-    };
+    return dict(
+        id=id, headline=f" {headline} ", summary="s" * 300, url=f"https://news/{id}", datetime=when
+    );
 }
 
 test "news picks company articles round-robin, newest first" {

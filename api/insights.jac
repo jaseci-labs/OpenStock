@@ -72,6 +72,10 @@ def text(v: any) -> str | None {
     return v.strip() if isinstance(v, str) and v.strip() else None;
 }
 
+def is_real(v: any) -> bool {
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v);
+}
+
 def num(v: any) -> float | None {
     if isinstance(v, str) and v.strip() {
         try {
@@ -80,15 +84,11 @@ def num(v: any) -> float | None {
             return None;
         }
     }
-    return float(v)
-        if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
-        else None;
+    return float(v) if is_real(v) else None;
 }
 
 def whole(v: any) -> int | None {
-    return int(v)
-        if isinstance(v, (int, float)) and not isinstance(v, bool) and v == int(v)
-        else None;
+    return int(v) if is_real(v) and v == int(v) else None;
 }
 
 # Halves round up, as the legacy Math.round did (round() would send 0.25 to 0.2)
@@ -121,18 +121,11 @@ def source_insight(source: str, found: any) -> SourceInsight | None {
     if buzz is None or metric is None {
         return None;
     }
-    name = found.get("company_name");
-    trend = found.get("trend");
-    return SourceInsight(
-        source=source,
-        label=label,
-        company_name=name if isinstance(name, str) else None,
-        buzz_score=round_to(buzz),
-        bullish_pct=num(found.get("bullish_pct")),
-        trend=trend if trend in ("rising", "falling", "stable") else None,
-        metric_label=metric_label,
-        metric_value=int(round_to(metric, 0)),
-    );
+    (name, trend) = (found.get("company_name"), found.get("trend"));
+    name = name if isinstance(name, str) else None;
+    trend = trend if trend in ("rising", "falling", "stable") else None;
+    (bullish, count) = (num(found.get("bullish_pct")), int(round_to(metric, 0)));
+    return SourceInsight(source, label, name, round_to(buzz), bullish, trend, metric_label, count);
 }
 
 def build_sentiment(symbol: str, found: list[SourceInsight | None]) -> StockSentiment | None {
@@ -147,15 +140,11 @@ def build_sentiment(symbol: str, found: list[SourceInsight | None]) -> StockSent
         }
     }
     names = [s.company_name for s in sources if s.company_name];
-    return StockSentiment(
-        symbol=symbol.upper(),
-        company_name=names[0] if names else None,
-        average_buzz=round_to(mean([s.buzz_score for s in sources])),
-        bullish_average=round_to(mean(bullish)) if bullish else None,
-        source_alignment=source_alignment(bullish),
-        available_sources=len(sources),
-        sources=sources,
-    );
+    name = names[0] if names else None;
+    buzz = round_to(mean([s.buzz_score for s in sources]));
+    average = round_to(mean(bullish)) if bullish else None;
+    mix = source_alignment(bullish);
+    return StockSentiment(symbol.upper(), name, buzz, average, mix, len(sources), sources);
 }
 
 def fetch_source(source: str, symbol: str, days: int, key: str) -> SourceInsight | None {
@@ -217,12 +206,10 @@ def news_item(symbol: str, value: any) -> NewsItem | None {
     url = text(original.get("url"));
     host = http_host(url or "");
     relevance = whole(enrichment.get("relevance_score"));
-    if title is None
-        or url is None
-        or host is None
-        or relevance is None
-        or not MIN_RELEVANCE <= relevance <= 10
-    {
+    if title is None or url is None or host is None or relevance is None {
+        return None;
+    }
+    if not MIN_RELEVANCE <= relevance <= 10 {
         return None;
     }
     # The analysis for the page's own symbol only: an article about AAPL and MSFT carries one entry per ticker.
@@ -239,18 +226,12 @@ def news_item(symbol: str, value: any) -> NewsItem | None {
         impact = impact[:MAX_IMPACT - 1].rstrip() + "…";
     }
     published = text(original.get("time_published"));
-    outlets = whole(row(value).get("sources_count")) or 1;
-    return NewsItem(
-        id=text(original.get("uid")) or url,
-        title=title,
-        url=url,
-        source=text(original.get("source")) or text(original.get("source_domain")) or host,
-        published_at=published if published and is_date(published) else None,
-        relevance=relevance,
-        sentiment=sentiment if sentiment in ("positive", "neutral", "negative") else None,
-        impact=impact,
-        outlets=max(outlets, 1),
-    );
+    when = published if published and is_date(published) else None;
+    outlets = max(whole(row(value).get("sources_count")) or 1, 1);
+    uid = text(original.get("uid")) or url;
+    source = text(original.get("source")) or text(original.get("source_domain")) or host;
+    mood = sentiment if sentiment in ("positive", "neutral", "negative") else None;
+    return NewsItem(uid, title, url, source, when, relevance, mood, impact, outlets);
 }
 
 def ticker_news(symbol: str, payload: any) -> TickerNews | None {
@@ -279,12 +260,9 @@ def:pub get_alphai_news(symbol: str) -> TickerNews | None {
         return None;
     }
     # collapse=story: one row per story, so five reprints of the same event don't fill the card
-    query = urlencode({
-        "symbol": ticker,
-        "page_size": MAX_ITEMS,
-        "min_relevance": MIN_RELEVANCE,
-        "collapse": "story",
-    });
+    query = urlencode(
+        dict(symbol=ticker, page_size=MAX_ITEMS, min_relevance=MIN_RELEVANCE, collapse="story")
+    );
     headers = {"Authorization": f"Bearer {key}", "Accept": "application/json"};
     return ticker_news(
         ticker, get_json(f"{NEWS_URL}?{query}", headers, NEWS_TTL, NEWS_FAILURE_TTL)

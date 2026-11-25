@@ -27,6 +27,7 @@ graph import {
     }
     model ++> api.markets { Market, Pulse, Group, Clock, MarketSession, session_of }
     api.fetch ++> api.insights | api.ai | api.kit { request_json }
+    api.fetch ++> api.quotes | api.seo { fetch_text }
     insight_model ++> api.insights { SourceInsight, StockSentiment, NewsItem, TickerNews }
     model ++> api.portfolio {
         Quote,
@@ -336,7 +337,7 @@ graph import {
         ago,
         NAME_INPUT,
     }
-    ui.stocks ++> pages.stocks { use_live, Empty, WatchButton, AlertButton, ListButton, ago }
+    ui.stocks ++> pages.stocks { use_live, Empty, WatchButton, AlertButton, ListButton, ago, quiet }
     fmt ++> pages.dashboard { grouped }
     fmt ++> pages.watchlist | pages.stocks { money, signed, compact }
     model ++> pages.dashboard { Market, DailyQuote, yahoo_app_symbol }
