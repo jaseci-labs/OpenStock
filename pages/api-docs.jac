@@ -95,7 +95,7 @@ def:pub page -> JsxPage {
             title="How OpenStock works."
             sub="A transparent look at the event-driven, multi-provider system behind your market data and emails."
         >
-            <span className="pill h-8 px-3">v{LATEST_RELEASE["id"].replace("-", ".")}</span>
+            <span className="pill h-8 px-3">v{RELEASES[0].id.replace("-", ".")}</span>
             <span className="pill h-8 px-3">Gemini with MiniMax fallback</span>
             <span className="pill h-8 px-3">Open source · AGPL-3.0</span>
         </PageHero>
@@ -145,12 +145,9 @@ def:pub page -> JsxPage {
                     </table>
                 </div>
             </div>
-            <a
-                href={REPO_URL + "/blob/main/MARKET_SUPPORT.md"}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-ghost mt-4"
-            >Full market support notes</a>
+            <Go to={REPO_URL + "/blob/main/MARKET_SUPPORT.md"} className="btn btn-ghost mt-4">
+                Full market support notes
+            </Go>
         </section>
         <section
             className="mx-auto mt-24 grid max-w-[1200px] items-start gap-10 px-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
@@ -198,18 +195,16 @@ def:pub page -> JsxPage {
             <div className="hatch">
                 <div className="card row-list">
                     {[
-                        <a
+                        <Go
                             key={s[0]}
-                            href={s[2]}
-                            target="_blank"
-                            rel="noreferrer"
+                            to={s[2]}
                             className="group flex flex-col gap-1 px-5 py-4 transition-colors hover:bg-hover/40 sm:flex-row sm:items-center sm:gap-6"
                         >
                             <span
                                 className="w-40 flex-none font-bold text-foreground group-hover:text-brand-ink"
                             >{s[0]}</span>
                             <span className="text-muted-foreground">{s[1]}</span>
-                        </a>
+                        </Go>
                         for s in STACK
                     ]}
                 </div>

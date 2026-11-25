@@ -10,7 +10,21 @@ graph spaces {
 }
 
 graph import {
-    model ++> api.quotes { Quote, DailyQuote, Closes, Profile, WatchlistRow, Stock, Article, has_finnhub_quotes, has_finnhub_company_data, tradingview_exchange_for_mic, yahoo_symbol, is_yahoo_symbol, yahoo_currency }
+    model ++> api.quotes {
+        Quote,
+        DailyQuote,
+        Closes,
+        Profile,
+        WatchlistRow,
+        Stock,
+        Article,
+        has_finnhub_quotes,
+        has_finnhub_company_data,
+        tradingview_exchange_for_mic,
+        yahoo_symbol,
+        is_yahoo_symbol,
+        yahoo_currency,
+    }
     model ++> api.markets { Market, Pulse, Group, Clock, MarketSession, session_of }
     api.fetch ++> api.insights | api.ai | api.kit { request_json }
     insight_model ++> api.insights { SourceInsight, StockSentiment, NewsItem, TickerNews }
@@ -44,38 +58,183 @@ graph import {
     rules ++> ui.forms { PROFILE_OPTIONS, password_checks, password_ok, valid_email }
     rules ++> "pages/sign-up" { username_for }
     api.account ++> ui.session { get_profile }
-    api.account ++> ui.site { repo_stars }
     api.account ++> "pages/sign-up" { save_profile }
     ui.i18n ++> web { locale }
     ui.i18n ++> ui.kit { t, tr }
     ui.i18n ++> ui.session { t }
     ui.i18n ++> ui.forms { t, locale, message_key }
-    ui.i18n ++> ui.site { tr }
     ui.i18n ++> ui.shell { t, rich, locale, set_locale, LOCALES, LOCALE_NAMES }
     ui.i18n ++> pages.layout { locale, is_rtl }
-    ui.i18n ++> "pages/sign-in" | "pages/sign-up" | "pages/forgot-password" | "pages/reset-password" { t }
+    ui.i18n ++> "pages/sign-in" | "pages/sign-up" | "pages/forgot-password" | "pages/reset-password" {
+        t,
+    }
     ui.kit ++> web { Toasts }
     ui.kit ++> ui.forms { cx, Menu }
-    ui.kit ++> ui.site { cx, Dialog }
     ui.kit ++> ui.shell { cx, Dialog, Menu, MenuItem, toast_error, toast_ok }
     ui.kit ++> pages.layout { Loading }
-    ui.kit ++> pages.love { cx }
     ui.kit ++> "pages/sign-in" | "pages/sign-up" { toast_error }
     ui.kit ++> "pages/forgot-password" | "pages/reset-password" { toast_error, toast_ok }
     ui.session ++> ui.forms { auth_ways, social_sign_in }
     ui.session ++> ui.shell { leave }
     ui.session ++> pages.layout { load_user, me }
-    ui.session ++> "pages/sign-in" | "pages/sign-up" | "pages/forgot-password" | "pages/reset-password" { auth_post }
-    ui.forms ++> "pages/sign-in" { Field, SubmitButton, FooterLink, Branding, SocialButtons, email_problem }
-    ui.forms ++> "pages/sign-up" { Field, SubmitButton, FooterLink, Branding, SocialButtons, ChoiceChips, CountrySelect, PasswordChecklist, email_problem, password_problem }
-    ui.forms ++> "pages/forgot-password" { Field, SubmitButton, FooterLink, Branding, email_problem }
-    ui.forms ++> "pages/reset-password" { Field, SubmitButton, FooterLink, Branding, PasswordChecklist, password_problem }
-    ui.site ++> ui.shell { ACTIVE_SPONSORS, SponsorLink, SponsorMark, UpdateBanner }
-    ui.site ++> pages.layout { MarketingLayout }
-    ui.site ++> pages.about { PageHero, SectionHead, IconCard, REPO_URL, GOOD_FIRST_ISSUES_URL }
-    ui.site ++> pages.help { PageHero, SectionHead, IconCard, REPO_URL, DISCORD_URL, CONTACT_EMAIL }
-    ui.site ++> pages.terms { PageHero, SectionHead, CONTACT_EMAIL }
-    ui.site ++> "pages/api-docs" { PageHero, SectionHead, IconCard, REPO_URL, LATEST_RELEASE }
-    ui.site ++> pages.love { PageHero, SectionHead, SponsorLink, REPO_URL, SPONSOR_TIERS, ACTIVE_SPONSORS, PREVIOUS_SPONSORS, PREVIOUS_SUPPORTERS }
+    ui.session ++> "pages/sign-in" | "pages/sign-up" | "pages/forgot-password" | "pages/reset-password" {
+        auth_post,
+    }
+    ui.forms ++> "pages/sign-in" {
+        Field,
+        SubmitButton,
+        FooterLink,
+        Branding,
+        SocialButtons,
+        email_problem,
+    }
+    ui.forms ++> "pages/sign-up" {
+        Field,
+        SubmitButton,
+        FooterLink,
+        Branding,
+        SocialButtons,
+        ChoiceChips,
+        CountrySelect,
+        PasswordChecklist,
+        email_problem,
+        password_problem,
+    }
+    ui.forms ++> "pages/forgot-password" {
+        Field,
+        SubmitButton,
+        FooterLink,
+        Branding,
+        email_problem,
+    }
+    ui.forms ++> "pages/reset-password" {
+        Field,
+        SubmitButton,
+        FooterLink,
+        Branding,
+        PasswordChecklist,
+        password_problem,
+    }
+    ui.i18n ++> ui.site | ui.market { tr }
+    ui.kit ++> ui.site { cx, Dialog }
+    ui.kit ++> ui.market { cx, ChangePill, PriceFlash, DataFreshness }
+    ui.kit ++> pages.index | pages.love | pages.sponsor | pages.changelog | pages.compare.index | pages.s.index {
+        cx,
+    }
+    content.site ++> ui.site { REPO_URL, DISCORD_URL, RepoStats, format_count }
+    content.sponsors ++> ui.site {
+        Sponsor,
+        Perk,
+        SPONSOR_TIERS,
+        ACTIVE_SPONSORS,
+        TIER_COLOR,
+        SPONSOR_CONTACT_EMAIL,
+        tier_border,
+    }
+    content.changelog ++> ui.site { RELEASES }
+    api.seo ++> ui.site { repo_stats }
+    model ++> ui.market { Market, Quote, DailyQuote, yahoo_app_symbol }
+    api.quotes ++> ui.market { live_quotes, yahoo_daily_quotes, is_realtime }
+    api.markets ++> ui.market { get_market }
+    content.sponsors ++> ui.shell { sidebar_sponsors, SIDEBAR_SPONSOR_SLOTS }
+    ui.site ++> ui.shell { SponsorLink, SponsorMark, UpdateBanner }
+    ui.market ++> ui.shell { ProductPreview }
+    ui.site ++> pages.layout { MarketingLayout, head }
+    ui.site ++> pages.about { PageHero, SectionHead, IconCard, Go, CTA, CTA_GHOST }
+    content.site ++> pages.about { REPO_URL, GOOD_FIRST_ISSUES_URL }
+    ui.site ++> pages.help { PageHero, SectionHead, IconCard, Go, Faqs, CtaCard }
+    content.site ++> pages.help { REPO_URL, DISCORD_URL }
+    content.sponsors ++> pages.help | pages.terms { SPONSOR_CONTACT_EMAIL }
+    ui.site ++> pages.terms { PageHero, SectionHead }
+    ui.site ++> "pages/api-docs" { PageHero, SectionHead, IconCard, Go }
+    content.site ++> "pages/api-docs" { REPO_URL }
+    content.changelog ++> "pages/api-docs" { RELEASES }
+    ui.site ++> pages.love { PageHero, SectionHead, SponsorLink, Go, CTA, CTA_GHOST }
+    content.site ++> pages.love { REPO_URL }
+    content.sponsors ++> pages.love {
+        Sponsor,
+        ACTIVE_SPONSORS,
+        PREVIOUS_SPONSORS,
+        PREVIOUS_SUPPORTERS,
+        tier_name,
+    }
+    ui.site ++> pages.index { SectionHead, IconCard, SponsorLink, Go, CTA, CTA_GHOST, use_anchor }
+    ui.market ++> pages.index { ProductPreview }
+    content.site ++> pages.index {
+        REPO_URL,
+        DISCORD_URL,
+        GOOD_FIRST_ISSUES_URL,
+        RepoStats,
+        format_count,
+    }
+    content.sponsors ++> pages.index { sidebar_sponsors }
+    api.seo ++> pages.index | pages.sponsor { repo_stats }
+    model ++> pages.index { session_of, PRE, OPEN, CLOSE, AFTER_END, DAY }
+    ui.site ++> pages.sponsor {
+        IconCard,
+        SponsorLink,
+        SponsorMark,
+        Go,
+        CTA,
+        CTA_GHOST,
+        MAILTO,
+        use_anchor,
+    }
+    content.site ++> pages.sponsor { DISCORD_URL, RepoStats, format_count, sponsor_checkout_url }
+    content.sponsors ++> pages.sponsor {
+        Sponsor,
+        Tier,
+        SPONSOR_TIERS,
+        ACTIVE_SPONSORS,
+        PREVIOUS_SPONSORS,
+        PREVIOUS_SUPPORTERS,
+        TIER_COLOR,
+        REGISTERED_USERS,
+        SPONSOR_GOAL,
+        SPONSOR_GOAL_LABEL,
+        SPONSOR_RECIPIENT,
+        FUNDING_USES,
+        tier_border,
+        tier_name,
+    }
+    ui.site ++> pages.changelog { PageHero, SectionHead, Go, CTA, CTA_GHOST }
+    content.site ++> pages.changelog { REPO_URL, GOOD_FIRST_ISSUES_URL }
+    content.changelog ++> pages.changelog {
+        Credit,
+        Release,
+        RELEASES,
+        MAINTAINER,
+        contributors,
+        credit_label,
+        credit_title,
+    }
+    ui.site ++> pages.compare { PageHero }
+    content.comparisons ++> pages.compare | pages.s.index { GUIDES }
+    ui.site ++> pages.compare.index { PageHero, Faqs, CtaCard, NotFound, head, CTA, CTA_GHOST }
+    content.comparisons ++> pages.compare.index { GUIDES, find_guide }
+    content.tickers ++> pages.compare.index { Ticker, ticker_path }
+    api.seo ++> pages.compare.index { guide_ld, find_ticker }
+    ui.site ++> pages.s { PageHero, head, use_anchor, CTA, CTA_GHOST }
+    content.tickers ++> pages.s {
+        Ticker,
+        DIRECTORY_TITLE,
+        directory_description,
+        ticker_path,
+        sector_anchor,
+    }
+    api.seo ++> pages.s { tickers_by_sector, directory_ld }
+    ui.site ++> pages.s.index { Go, Faqs, CtaCard, NotFound, head, CTA, CTA_GHOST }
+    ui.market ++> pages.s.index { TradingView, symbol_info, candle_chart }
+    content.tickers ++> pages.s.index {
+        Filing,
+        EdgarCompany,
+        TickerPage,
+        ticker_path,
+        sector_anchor,
+        company_browse_url,
+        format_filing_date,
+    }
+    model ++> pages.s.index { tradingview_symbol, tradingview_symbol_url }
+    api.seo ++> pages.s.index { ticker_page, edgar_company }
     ui.shell ++> pages.layout { AppShell, AuthLayout, SearchCommand }
 }
