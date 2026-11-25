@@ -11,30 +11,16 @@ import from datetime { datetime }
 import from zoneinfo { ZoneInfo }
 
 """One market from compact text: "id|name|short|time zone|hours|feed", its dashboard tiles as
-"SYMBOL=Label[=Finnhub symbol], ..." and each titled group of its tables as "SYMBOL=Name, ..."."""
-def market(
-    head: str,
-    pulse: str,
-    groups: dict[str, str],
-    news: str = "stock",
-    heatmap: str = "",
-    yahoo: bool = False,
-    trading_days: list[int] = [1, 2, 3, 4, 5],
-) -> Market {
-    return Market(
-        *head.split("|"),
-        pulse=[Pulse(*item.split("=")) for item in pulse.split(", ")],
-        groups=[
-            Group(
-                title, [(s, name) for (s, _, name) in [i.partition("=") for i in text.split(", ")]]
-            )
-            for (title, text) in groups.items()
-        ],
-        news=news,
-        heatmap=heatmap,
-        yahoo=yahoo,
-        trading_days=trading_days,
-    );
+"SYMBOL=Label[=Finnhub symbol], ..." and each titled group of its tables as "SYMBOL=Name, ...". The rest are
+Market's own fields."""
+def market(head: str, pulse: str, groups: dict[str, str], **more: any) -> Market {
+    tiles = [Pulse(*item.split("=")) for item in pulse.split(", ")];
+    tables = [Group(title, named(text)) for (title, text) in groups.items()];
+    return Market(*head.split("|"), tiles, tables, **more);
+}
+
+def named(text: str) -> list[tuple[str, str]] {
+    return [(s, name) for (s, _, name) in [i.partition("=") for i in text.split(", ")]];
 }
 
 glob MARKETS: list[Market] = [
@@ -126,14 +112,7 @@ glob MARKETS: list[Market] = [
     ),
 ];
 
-glob COUNTRY_MARKET: dict[str, str] = {
-    "IN": "in",
-    "DE": "de",
-    "CA": "ca",
-    "AU": "au",
-    "SA": "sa",
-    "PL": "pl",
-};
+glob COUNTRY_MARKET: dict[str, str] = {c: c.lower() for c in "IN DE CA AU SA PL".split()};
 
 def:pub markets -> list[Market] {
     return MARKETS;
