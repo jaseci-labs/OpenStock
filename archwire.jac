@@ -24,6 +24,7 @@ graph import {
         yahoo_symbol,
         is_yahoo_symbol,
         yahoo_currency,
+        TV_EXCHANGE,
     }
     model ++> api.markets { Market, Pulse, Group, Clock, MarketSession, session_of }
     api.fetch ++> api.insights | api.ai | api.kit { request_json }
