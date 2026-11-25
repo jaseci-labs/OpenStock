@@ -47,8 +47,9 @@ def Chart(tv: str) -> JsxElement {
     has studies: list[str] = saved_studies();
 
     def toggle(id: str) {
-        studies = [i for i in INDICATORS if (i in studies) != (i == id)];
-        __setLocalStorage(STUDIES, JSON.stringify(studies));
+        picked = [i for i in INDICATORS if (i in studies) != (i == id)];
+        studies = picked;
+        __setLocalStorage(STUDIES, JSON.stringify(picked));
     }
 
     return <Panel
@@ -410,7 +411,9 @@ def Stock(sym: str) -> JsxElement {
 
     async can with entry {
         try {
-            paid = await get_stock_metrics(sym) if company else paid;
+            if company {
+                paid = await get_stock_metrics(sym);
+            }
         } except RemoteError {}
     }
 
