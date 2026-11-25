@@ -335,6 +335,7 @@ graph import {
         problem,
         changed,
         ago,
+        quiet,
         NAME_INPUT,
     }
     ui.stocks ++> pages.stocks { use_live, Empty, WatchButton, AlertButton, ListButton, ago, quiet }
