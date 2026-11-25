@@ -204,29 +204,19 @@ glob NEWS: str = """<!DOCTYPE html>
 </body>
 </html>""";
 
-# The AI writes the summary for the yellow in-app look; in order, each left side becomes its right for the letter
-glob RESTYLE: list[tuple[str, str]] = [
-    ("<h3", '<h3 style="color: #ffffff; margin-top: 30px; margin-bottom: 15px; font-size: 20px;"'),
-    (
-        '<div class="dark-info-box"',
-        '<div style="background-color: #1e1e1e; padding: 20px; border-radius: 8px; margin-bottom: 25px;"',
-    ),
-    (
-        "<h4",
-        '<h4 style="color: #ffffff; margin-top: 0; margin-bottom: 15px; font-size: 18px; line-height: 1.4;"',
-    ),
-    ("<ul", '<ul style="padding-left: 0; list-style-type: none; margin: 0 0 15px 0;"'),
-    (
-        "<li",
-        '<li style="margin-bottom: 12px; color: #cccccc; font-size: 16px; line-height: 1.6; display: flex;"',
-    ),
-    ('class="dark-text-secondary"', ""),
-    (
-        "•",
-        '<span style="color: #20c997; font-weight: bold; margin-right: 10px; font-size: 18px;">•</span>',
-    ),
-    ('<strong style="color: #FDD458;">', '<strong style="color: #20c997;">'),
-    ("<a ", '<a style="color: #20c997; text-decoration: none; font-weight: 600;" '),
+# The AI writes the summary for the yellow in-app look; in order, each `old|new|` line's old becomes its new for
+# the letter
+glob RESTYLE: list[list[str]] = [
+    line.split("|")[:2]
+    for line in """<h3|<h3 style="color: #ffffff; margin-top: 30px; margin-bottom: 15px; font-size: 20px;"|
+<div class="dark-info-box"|<div style="background-color: #1e1e1e; padding: 20px; border-radius: 8px; margin-bottom: 25px;"|
+<h4|<h4 style="color: #ffffff; margin-top: 0; margin-bottom: 15px; font-size: 18px; line-height: 1.4;"|
+<ul|<ul style="padding-left: 0; list-style-type: none; margin: 0 0 15px 0;"|
+<li|<li style="margin-bottom: 12px; color: #cccccc; font-size: 16px; line-height: 1.6; display: flex;"|
+class="dark-text-secondary"||
+•|<span style="color: #20c997; font-weight: bold; margin-right: 10px; font-size: 18px;">•</span>|
+<strong style="color: #FDD458;">|<strong style="color: #20c997;">|
+<a |<a style="color: #20c997; text-decoration: none; font-weight: 600;" |""".splitlines()
 ];
 
 """Message copy is plain text; escaped before it goes into email HTML."""
@@ -394,8 +384,8 @@ def send_alert_email(
 
 """The weekly letter around the AI's summary."""
 def news_html(subject: str, date: str, summary: str) -> str {
-    for (old, new) in RESTYLE {
-        summary = summary.replace(old, new);
+    for pair in RESTYLE {
+        summary = summary.replace(pair[0], pair[1]);
     }
     year = str(datetime.now(timezone.utc).year);
     return fill(NEWS, {"subject": subject, "date": date, "summary": summary, "year": year});
