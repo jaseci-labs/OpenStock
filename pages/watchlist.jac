@@ -268,8 +268,8 @@ def:pub page -> JsxPage {
     async can with [starred, ready] entry {
         if ready {
             symbols = starred.split(",") if starred else [];
-            sources = [t("NewsSources.companyNews"), t("NewsSources.marketNews")];
-            news = await quiet(get_news(symbols, *sources), []);
+            (company, market) = (t("NewsSources.companyNews"), t("NewsSources.marketNews"));
+            news = await quiet(get_news(symbols, company, market), []);
         }
     }
 
