@@ -1,4 +1,5 @@
 """The signed-in caller's profile."""
+import json;
 
 # Onboarding answers live on the caller's own root; the accounts plugin keeps only the sign-in
 node Profile {

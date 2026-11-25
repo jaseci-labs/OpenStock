@@ -12,6 +12,7 @@ test "sponsors name tiers that exist, and the sidebar holds only partners" {
         and len(side) <= SIDEBAR_SPONSOR_SLOTS;
     assert SPONSOR_TIERS[3].slots == SIDEBAR_SPONSOR_SLOTS
         and "13,000+" in SPONSOR_TIERS[3].perks[1];
+    assert tier_name("company") == "Company" and tier_name("") == "Sponsor";
     assert tier_border("partner") == "color-mix(in oklch, oklch(0.72 0.14 300) 55%, transparent)";
     perk = ACTIVE_SPONSORS[2].perk;
     assert perk is not None and perk.code == "PROXY90" and perk.note;
